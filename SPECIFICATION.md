@@ -174,7 +174,10 @@ The Data Vault model consists of three core entity types:
 
 ### 5.5 Data Vault Conventions
 
-- **Hash Keys:** All Hub and Link surrogate keys use hashing of business keys (default: MD5 for dbt-utils v0.x, SHA256 for v1.x+)
+- **Hash Keys:** All Hub and Link surrogate keys use hashing of business keys
+  - Recommended: Use `dbt_utils.generate_surrogate_key()` macro (SHA256 for dbt-utils v1.x+)
+  - Alternative: Use `dbt_utils.surrogate_key()` macro for MD5 hashing (legacy, v0.x)
+  - Choose one consistently across the project based on dbt-utils version
 - **Load Timestamps:** All entities include `load_date` and `record_source` columns
 - **Satellites:** Track historical changes with `load_date` as part of the key
 - **Reference Tables:** Stored as Satellites for code descriptions
@@ -435,8 +438,9 @@ healthcare-data-platform/
 When generating code for this project, AI assistants should:
 
 1. **Always use absolute file paths** when working in the repository:
-   - Repository root: The cloned repository directory (e.g., `/path/to/healthcare-data-platform/`)
-   - Adjust paths based on your local environment or CI/CD setup
+   - Repository root: The cloned repository directory
+   - Example: `/Users/username/projects/healthcare-data-platform/` (macOS/Linux) or `C:\Users\username\projects\healthcare-data-platform\` (Windows)
+   - Adjust based on your local environment or CI/CD setup
 
 2. **Follow naming conventions strictly:**
    - Staging: `stg_<source>__<entity>`
