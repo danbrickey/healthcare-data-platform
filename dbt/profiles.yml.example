@@ -1,3 +1,8 @@
+# profiles.yml for healthcare_platform dbt project
+# Copy this file to ~/.dbt/profiles.yml
+# NOTE: dbt commands should be run from the dbt/ directory
+# If running from a different location, adjust the database path accordingly
+
 healthcare_platform:
   target: dev
   outputs:

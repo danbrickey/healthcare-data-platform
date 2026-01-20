@@ -38,6 +38,8 @@ dbt/
    dbt debug
    ```
 
+**Important**: All dbt commands should be run from the `dbt/` directory to ensure the database path is resolved correctly.
+
 ## Data Vault 2.0 Naming Conventions
 
 - **Staging models**: `stg_<source>__<entity>.sql`
