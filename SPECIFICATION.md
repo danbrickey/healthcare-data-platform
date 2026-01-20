@@ -99,27 +99,45 @@ This project demonstrates proficiency in:
 ### 4.1 Synthea Synthetic Data
 **Primary Source:** [Synthea™ Patient Generator](https://synthetichealth.github.io/synthea/)
 
-**Description:** Synthea generates realistic synthetic patient data including:
-- Patient demographics and clinical records
-- Medical encounters (office visits, ER, inpatient)
-- Diagnoses (ICD-10 codes)
-- Procedures (CPT codes)
-- Medications and immunizations
-- Claims and insurance data
+**Description:** Synthea is an open-source synthetic patient population generator that produces realistic but entirely fictional electronic healthcare records. Patients are simulated from birth to death with disease progression modeled through state-machine modules driven by real-world prevalence and incidence data.
 
-**Format:** CSV files with FHIR-compatible structure
+**Key Characteristics:**
+- Demographics aligned with US Census data
+- Longitudinal records with temporal consistency
+- Standard medical terminologies (SNOMED-CT, RxNorm, LOINC, CVX, ICD-10, CPT)
+- All identifiers are UUIDs for relational integrity
+- Dates in ISO 8601 format with timezone awareness
 
-**Key Files:**
-- `patients.csv` - Patient demographics
-- `encounters.csv` - All patient encounters
-- `conditions.csv` - Diagnoses
-- `procedures.csv` - Procedures performed
-- `medications.csv` - Medication prescriptions
-- `claims.csv` - Insurance claims
-- `claims_transactions.csv` - Claim line items
-- `organizations.csv` - Healthcare organizations/facilities
-- `providers.csv` - Healthcare providers
-- `payers.csv` - Insurance payers
+**Format:** CSV files with FHIR-compatible structure (enabled via `exporter.csv.export = true`)
+
+**CSV Files and Key Columns:**
+
+| File | Description | Key Columns |
+|------|-------------|-------------|
+| `patients.csv` | Patient demographics | `id`, `birthdate`, `deathdate`, `ssn`, `first`, `last`, `gender`, `race`, `ethnicity`, `address`, `city`, `state`, `zip`, `county`, `lat`, `lon`, `healthcare_expenses`, `healthcare_coverage` |
+| `encounters.csv` | Healthcare encounters | `id`, `start`, `stop`, `patient`, `organization`, `provider`, `payer`, `encounterclass`, `code`, `description`, `base_encounter_cost`, `total_claim_cost`, `payer_coverage`, `reasoncode`, `reasondescription` |
+| `conditions.csv` | Diagnoses/conditions | `start`, `stop`, `patient`, `encounter`, `code` (SNOMED), `description` |
+| `procedures.csv` | Procedures performed | `start`, `stop`, `patient`, `encounter`, `code` (SNOMED), `description`, `base_cost`, `reasoncode`, `reasondescription` |
+| `medications.csv` | Medication orders | `start`, `stop`, `patient`, `payer`, `encounter`, `code` (RxNorm), `description`, `base_cost`, `payer_coverage`, `dispenses`, `totalcost`, `reasoncode`, `reasondescription` |
+| `observations.csv` | Labs, vitals, assessments | `date`, `patient`, `encounter`, `category`, `code` (LOINC), `description`, `value`, `units`, `type` |
+| `claims.csv` | Insurance claims | `id`, `patientid`, `providerid`, `primarypatientinsuranceid`, `secondarypatientinsuranceid`, `departmentid`, `patientdepartmentid`, `diagnosis1`-`diagnosis8`, `referringproviderid`, `appointmentid`, `currentillnessdate`, `servicedate`, `supervisingproviderid`, `status1`-`status2`, `statusp` |
+| `claims_transactions.csv` | Claim line items | `id`, `claimid`, `chargeid`, `patientid`, `type`, `amount`, `method`, `fromdate`, `todate`, `placeofservice`, `procedurecode`, `modifier1`, `modifier2`, `diagnosisref1`-`diagnosisref4`, `units`, `departmentid`, `notes`, `unitamount`, `transferoutid`, `transfertype`, `payments`, `adjustments`, `transfers`, `outstanding`, `appointmentid`, `linenote`, `patientinsuranceid`, `feescheduleid`, `providerid`, `supervisingproviderid` |
+| `organizations.csv` | Healthcare facilities | `id`, `name`, `address`, `city`, `state`, `zip`, `lat`, `lon`, `phone`, `revenue`, `utilization` |
+| `providers.csv` | Healthcare providers | `id`, `organization`, `name`, `gender`, `speciality`, `address`, `city`, `state`, `zip`, `lat`, `lon`, `utilization` |
+| `payers.csv` | Insurance payers | `id`, `name`, `address`, `city`, `state_headquartered`, `zip`, `phone`, `amount_covered`, `amount_uncovered`, `revenue`, `covered_encounters`, `uncovered_encounters`, `covered_medications`, `uncovered_medications`, `covered_procedures`, `uncovered_procedures`, `covered_immunizations`, `uncovered_immunizations`, `unique_customers`, `qols_avg`, `member_months` |
+| `payer_transitions.csv` | Insurance coverage changes | `patient`, `memberid`, `start_year`, `end_year`, `payer`, `secondary_payer`, `ownership`, `ownername` |
+| `allergies.csv` | Patient allergies | `start`, `stop`, `patient`, `encounter`, `code`, `system`, `description`, `type`, `category`, `reaction1`, `description1`, `severity1`, `reaction2`, `description2`, `severity2` |
+| `immunizations.csv` | Immunization records | `date`, `patient`, `encounter`, `code` (CVX), `description`, `base_cost` |
+| `careplans.csv` | Care plan records | `id`, `start`, `stop`, `patient`, `encounter`, `code`, `description`, `reasoncode`, `reasondescription` |
+| `imaging_studies.csv` | Medical imaging metadata | `id`, `date`, `patient`, `encounter`, `series_uid`, `bodysite_code`, `bodysite_description`, `modality_code`, `modality_description`, `instance_uid`, `sop_code`, `sop_description`, `procedure_code` |
+| `devices.csv` | Medical devices | `start`, `stop`, `patient`, `encounter`, `code`, `description`, `udi` |
+| `supplies.csv` | Medical supplies | `date`, `patient`, `encounter`, `code`, `description`, `quantity` |
+
+**Data Quality Considerations:**
+- `stop` dates may be NULL for ongoing conditions/medications
+- Optional fields may be unpopulated in default configuration
+- Timestamps include timezone; standardize to UTC during staging
+- Some modules produce sparse data; validate completeness per use case
 
 **Volume:** Configurable; recommended 10,000-100,000 patients for demo
 
@@ -131,6 +149,139 @@ This project demonstrates proficiency in:
 - **Part D Prescriber Data:** Drug prescription patterns
 
 **Usage:** Supplement synthetic data with real-world benchmarks and reference data
+
+### 4.3 Data Ingestion Strategy
+
+**Ingestion Method:** DuckDB's native CSV reading capabilities via dbt sources
+
+**Process Flow:**
+1. Generate Synthea data → `data/synthea/*.csv`
+2. Define dbt sources pointing to CSV files using DuckDB's `read_csv_auto()` function
+3. Data Lake models (`stg_synthea__*`) read from sources and apply light transformations
+4. Raw Vault models consume staged data with hashing and audit columns
+
+**Source Configuration (`dbt/models/data_lake/_sources.yml`):**
+```yaml
+version: 2
+
+sources:
+  - name: synthea
+    description: Synthea synthetic healthcare data (CSV files)
+    meta:
+      external_location: "{{ env_var('SYNTHEA_DATA_PATH', 'data/synthea') }}"
+    tables:
+      - name: patients
+        description: Patient demographics
+        external:
+          location: "{{ source.meta.external_location }}/patients.csv"
+          options:
+            header: true
+      - name: encounters
+        description: Healthcare encounters
+      - name: conditions
+        description: Patient conditions/diagnoses
+      - name: procedures
+        description: Medical procedures
+      - name: medications
+        description: Medication orders
+      - name: observations
+        description: Clinical observations (labs, vitals)
+      - name: claims
+        description: Insurance claims
+      - name: claims_transactions
+        description: Claim line items
+      - name: organizations
+        description: Healthcare organizations
+      - name: providers
+        description: Healthcare providers
+      - name: payers
+        description: Insurance payers
+      - name: payer_transitions
+        description: Patient insurance coverage changes
+      - name: allergies
+        description: Patient allergies
+      - name: immunizations
+        description: Immunization records
+      - name: careplans
+        description: Care plans
+      - name: devices
+        description: Medical devices
+      - name: supplies
+        description: Medical supplies
+      - name: imaging_studies
+        description: Imaging study metadata
+```
+
+**DuckDB Source Macro (`dbt/macros/read_csv_source.sql`):**
+```sql
+{% macro read_csv_source(source_name, table_name) %}
+    read_csv_auto('{{ env_var("SYNTHEA_DATA_PATH", "data/synthea") }}/{{ table_name }}.csv', header=true)
+{% endmacro %}
+```
+
+**Example Staging Model (`stg_synthea__patients.sql`):**
+```sql
+with source as (
+    select * from {{ read_csv_source('synthea', 'patients') }}
+),
+
+renamed as (
+    select
+        id as patient_id
+        , birthdate as birth_date
+        , deathdate as death_date
+        , ssn
+        , first as first_name
+        , last as last_name
+        , gender
+        , race
+        , ethnicity
+        , address as street_address
+        , city
+        , state
+        , zip as postal_code
+        , county
+        , lat as latitude
+        , lon as longitude
+        , healthcare_expenses
+        , healthcare_coverage
+        , current_timestamp as load_date
+        , 'synthea' as record_source
+    from source
+)
+
+select * from renamed
+```
+
+### 4.4 Reference Data (Seeds)
+
+Reference data loaded via dbt seeds for code lookups and enrichment:
+
+| Seed File | Description | Source |
+|-----------|-------------|--------|
+| `icd10_codes.csv` | ICD-10-CM diagnosis code descriptions | CMS |
+| `cpt_codes.csv` | CPT procedure code descriptions | AMA (subset) |
+| `loinc_codes.csv` | LOINC observation code descriptions | Regenstrief |
+| `rxnorm_codes.csv` | RxNorm medication code descriptions | NLM |
+| `snomed_codes.csv` | SNOMED-CT code descriptions (subset) | SNOMED International |
+| `place_of_service.csv` | Place of service codes | CMS |
+| `encounter_class.csv` | Encounter class mappings | Internal |
+| `payer_type.csv` | Payer type classifications | Internal |
+
+**Seed Configuration (`dbt_project.yml`):**
+```yaml
+seeds:
+  healthcare_data_platform:
+    +schema: reference
+    icd10_codes:
+      +column_types:
+        code: varchar
+        description: varchar
+    cpt_codes:
+      +column_types:
+        code: varchar
+        description: varchar
+```
 
 ## 5. Data Architecture (Data Vault 2.0)
 
@@ -194,6 +345,35 @@ The Data Vault model consists of three core entity types:
 - **Reference Tables:** Stored as Satellites for code descriptions
 - **Staging Layer:** Use `automate_dv.stage()` macro to prepare source data with derived columns and hashed keys
 
+### 5.6 Satellite History Tracking
+
+**Full History Preservation:** All Raw Vault satellites maintain complete technical history using append-only inserts. Records are never updated or deleted.
+
+**Required Metadata Columns:**
+| Column | Description |
+|--------|-------------|
+| `hk_<entity>` | Hash key linking to parent Hub or Link |
+| `hashdiff` | Hash of payload columns for change detection |
+| `load_date` | Timestamp when record was loaded into the vault |
+| `record_source` | Source system identifier (e.g., `synthea`) |
+| `effective_from` | Business effective date (source timestamp when available) |
+
+**History Tracking Rules:**
+1. **Append-Only:** New satellite records are inserted; existing records are never modified
+2. **Change Detection:** Use `hashdiff` to detect payload changes; only insert when hash differs
+3. **Temporal Ordering:** `load_date` provides technical ordering; `effective_from` provides business ordering
+4. **Late-Arriving Data:** Insert with actual `load_date`; use `effective_from` for correct business timeline
+5. **Soft Deletes:** Track deletions via status satellites with `is_deleted` flag and `deleted_date`
+
+**Satellite Types by History:**
+| Type | History Tracking | Use Case |
+|------|------------------|----------|
+| Standard Satellite (`s_`) | Full history | All mutable attributes |
+| Status Satellite (`s_<entity>_status`) | Full history | Active/inactive/deleted state |
+| Multi-Active Satellite | Full history, multiple active | Multiple concurrent values (e.g., addresses, phone numbers) |
+
+**Point-in-Time Queries:** Use PIT tables (`pit_`) to efficiently query the state of an entity at any historical point without complex satellite joins
+
 ### 5.6 Business Vault Entities
 
 The Business Vault extends the Raw Vault with derived business logic and computed values:
@@ -228,47 +408,51 @@ The Business Vault extends the Raw Vault with derived business logic and compute
 healthcare-data-platform/
 ├── SPECIFICATION.md          # This file
 ├── README.md                 # Project overview and setup instructions
+├── CONTRIBUTING.md           # Contribution guidelines
 ├── .gitignore               
 ├── data/                     # Raw data files (not committed)
-│   ├── raw/                  # Synthea CSV files
-│   └── seeds/                # Reference data seeds
-├── dbt_project/              # dbt project root
+│   └── synthea/              # Synthea CSV files
+├── dbt/                      # dbt project root
 │   ├── dbt_project.yml       # dbt project configuration
-│   ├── profiles.yml          # Connection profiles (local example)
+│   ├── profiles.yml          # Connection profiles (local, gitignored)
+│   ├── profiles.yml.example  # Example profile for setup
 │   ├── packages.yml          # dbt package dependencies
 │   ├── models/               # dbt models
 │   │   ├── data_lake/        # Data Lake layer (raw → cleaned)
-│   │   │   ├── stg_synthea/  # Synthea source data lake models
-│   │   │   └── schema.yml    # Source and model definitions
+│   │   │   ├── stg_synthea/  # Synthea staging models
+│   │   │   └── _sources.yml  # Source definitions
 │   │   ├── raw_vault/        # Raw Data Vault entities
-│   │   │   ├── hubs/         # Hub tables
-│   │   │   ├── links/        # Link tables
-│   │   │   ├── satellites/   # Satellite tables
-│   │   │   └── schema.yml
+│   │   │   ├── hubs/         # Hub tables (h_*)
+│   │   │   ├── links/        # Link tables (l_*)
+│   │   │   ├── sats/         # Satellite tables (s_*)
+│   │   │   └── _raw_vault.yml
 │   │   ├── business_vault/   # Business rules and calculated fields
-│   │   │   └── schema.yml
+│   │   │   ├── computed_sats/ # Computed satellites (cs_*)
+│   │   │   ├── bridges/      # Bridge tables (brg_*)
+│   │   │   ├── pits/         # Point-in-time tables (pit_*)
+│   │   │   └── _business_vault.yml
 │   │   ├── info_mart/        # Business-focused dimensional models
-│   │   │   ├── claims/       # Claims analytics info mart
-│   │   │   ├── patients/     # Patient analytics info mart
-│   │   │   ├── providers/    # Provider analytics info mart
-│   │   │   └── schema.yml
-│   │   └── schema.yml        # Top-level schema
+│   │   │   ├── claims/       # Claims analytics mart
+│   │   │   ├── patient/      # Patient analytics mart
+│   │   │   ├── provider/     # Provider analytics mart
+│   │   │   └── _info_mart.yml
+│   │   └── _schema.yml       # Top-level schema
 │   ├── macros/               # Reusable dbt macros
-│   │   ├── data_vault/       # Data Vault-specific macros
-│   │   └── helpers/          # General helper macros
 │   ├── tests/                # Custom dbt tests
 │   ├── seeds/                # CSV reference data
-│   └── snapshots/            # Slowly changing dimension snapshots
-├── evidence_project/         # Evidence.dev project
+│   ├── snapshots/            # Slowly changing dimension snapshots
+│   └── analyses/             # Ad-hoc SQL analyses
+├── evidence/                 # Evidence.dev project (future)
 │   ├── pages/                # Report pages
 │   ├── sources/              # Data source connections
 │   └── components/           # Reusable components
 ├── scripts/                  # Utility scripts
 │   ├── generate_synthea.py   # Generate Synthea data
-│   └── setup_duckdb.py       # Initialize DuckDB database
+│   └── load_to_duckdb.py     # Load CSVs into DuckDB
 └── docs/                     # Additional documentation
-    ├── data_dictionary.md    # Data element definitions
-    └── setup_guide.md        # Environment setup guide
+    ├── planning_notes.md     # Planning and priorities
+    ├── project_metadata.md   # Project metadata
+    └── research_artifacts.md # Research links and notes
 ```
 
 ### 6.2 dbt Model Layers
@@ -296,6 +480,53 @@ healthcare-data-platform/
    - Denormalized for query performance
    - Business-friendly column names
    - Aggregated metrics
+
+### 6.3 Info Mart Layer Details
+
+The Info Mart provides business-ready dimensional models optimized for analytics and reporting.
+
+**Claims Mart (`models/info_mart/claims/`):**
+
+| Model | Type | Description |
+|-------|------|-------------|
+| `dim_claim` | Dimension | Claim header details with denormalized patient/provider info |
+| `fct_claim_line` | Fact | Claim line-level transactions with costs and codes |
+| `claims_daily_summary` | Aggregate | Daily claim volume and cost metrics |
+| `claims_monthly_summary` | Aggregate | Monthly trends by payer, provider, diagnosis category |
+| `claims_by_diagnosis` | Aggregate | Cost and utilization grouped by diagnosis |
+| `claims_by_procedure` | Aggregate | Cost and utilization grouped by procedure |
+
+**Patient Mart (`models/info_mart/patient/`):**
+
+| Model | Type | Description |
+|-------|------|-------------|
+| `dim_patient` | Dimension | Current patient demographics and attributes |
+| `dim_patient_history` | SCD Type 2 | Historical patient attribute changes |
+| `patient_encounter_summary` | Aggregate | Encounter counts and costs per patient |
+| `patient_condition_summary` | Aggregate | Active/historical conditions per patient |
+| `patient_risk_profile` | Derived | Risk scores and health indicators |
+| `patient_cohort` | Analytical | Patient segmentation for population health |
+
+**Provider Mart (`models/info_mart/provider/`):**
+
+| Model | Type | Description |
+|-------|------|-------------|
+| `dim_provider` | Dimension | Provider demographics and specialty |
+| `dim_organization` | Dimension | Healthcare organization details |
+| `provider_utilization` | Aggregate | Encounter and procedure volume by provider |
+| `provider_cost_metrics` | Aggregate | Average costs and reimbursement by provider |
+| `provider_quality_scores` | Derived | Quality metrics and performance indicators |
+| `provider_network_analysis` | Analytical | Network adequacy and referral patterns |
+
+**Shared Dimensions:**
+
+| Model | Description |
+|-------|-------------|
+| `dim_date` | Date dimension with fiscal periods, holidays |
+| `dim_diagnosis` | ICD-10 diagnosis codes with descriptions and categories |
+| `dim_procedure` | CPT/HCPCS procedure codes with descriptions |
+| `dim_payer` | Payer/insurance plan details |
+| `dim_place_of_service` | Service location types |
 
 ## 7. Naming Conventions
 
@@ -419,12 +650,13 @@ healthcare-data-platform/
    ```
 
 4. **Configure dbt Profile:**
-   - Copy `dbt_project/profiles.yml.example` to `~/.dbt/profiles.yml`
+   - Copy `dbt/profiles.yml.example` to `dbt/profiles.yml`
    - Update database path for local DuckDB file
+   - Set environment variable: `export SYNTHEA_DATA_PATH=data/synthea`
 
 5. **Run dbt:**
    ```bash
-   cd dbt_project
+   cd dbt
    dbt deps           # Install packages
    dbt seed           # Load reference data
    dbt run            # Build models
@@ -485,17 +717,137 @@ healthcare-data-platform/
 - Accepted values tests for categorical fields
 - Custom tests for business logic validation
 
-### 8.4 Deployment (Future)
+### 8.4 Incremental Loading Strategy
+
+**Incremental Models:** All Raw Vault and large Info Mart models use incremental materialization.
+
+**Incremental Column:** `load_date` drives incremental logic for all vault objects.
+
+**Model Materialization by Layer:**
+
+| Layer | Materialization | Incremental Strategy |
+|-------|-----------------|---------------------|
+| Data Lake (`stg_*`) | View | N/A - always reads full source |
+| Hubs (`h_*`) | Incremental | Append new business keys only |
+| Links (`l_*`) | Incremental | Append new relationships only |
+| Satellites (`s_*`) | Incremental | Append when `hashdiff` changes |
+| Computed Sats (`cs_*`) | Incremental or Table | Depends on calculation complexity |
+| Bridges (`brg_*`) | Table | Full refresh (snapshot) |
+| PITs (`pit_*`) | Incremental | Append new as-of dates |
+| Info Mart Dims | Table | Full refresh |
+| Info Mart Facts | Incremental | Append new transactions |
+| Info Mart Aggregates | Table | Full refresh |
+
+**Late-Arriving Data Handling:**
+1. Satellite inserts use actual `load_date` when data arrives
+2. `effective_from` column captures business timestamp for correct ordering
+3. PIT tables rebuilt daily to incorporate late arrivals
+4. Bridge tables rebuilt to reflect current state
+
+**Full Refresh Triggers:**
+- Schema changes to source data
+- Business key definition changes
+- Hash algorithm changes
+- Manual data corrections
+
+### 8.5 Testing Strategy
+
+**Standard dbt Tests:**
+
+| Test Type | Applied To | Purpose |
+|-----------|------------|---------|
+| `unique` | All primary keys (`hk_*`, `id`) | Ensure no duplicates |
+| `not_null` | All primary keys, required fields | Data completeness |
+| `relationships` | Foreign keys between models | Referential integrity |
+| `accepted_values` | Categorical fields (gender, status) | Valid domain values |
+
+**Healthcare-Specific Tests:**
+
+| Test | Description | Example |
+|------|-------------|---------|
+| `valid_date_range` | Dates within reasonable bounds | No future service dates, birth before death |
+| `cost_hierarchy` | Cost fields follow business rules | `charge_amount >= allowed_amount >= paid_amount` |
+| `code_format` | Medical codes match expected patterns | ICD-10: `^[A-Z][0-9]{2}\.?[0-9A-Z]{0,4}$` |
+| `encounter_completeness` | Required fields present by encounter type | Inpatient has admit/discharge dates |
+| `claim_balance` | Claim amounts reconcile | `paid + patient_resp + adjustment = allowed` |
+| `patient_timeline` | Events occur in logical order | Encounter before claim, diagnosis during encounter |
+
+**Custom Test Macros (`dbt/tests/`):**
+
+```sql
+-- tests/generic/valid_icd10_format.sql
+{% test valid_icd10_format(model, column_name) %}
+select *
+from {{ model }}
+where {{ column_name }} is not null
+  and not regexp_matches({{ column_name }}, '^[A-Z][0-9]{2}\.?[0-9A-Z]{0,4}$')
+{% endtest %}
+```
+
+**Data Quality Checks:**
+- Row count monitoring (alert on significant volume changes)
+- Null rate monitoring for optional fields
+- Distribution checks on key metrics (costs, ages, dates)
+- Freshness checks on source data
+
+### 8.6 Environment Configuration
+
+**Target Environments:**
+
+| Target | Database | Purpose | Schema Prefix |
+|--------|----------|---------|---------------|
+| `dev` | Local DuckDB file | Development | `dev_` |
+| `ci` | Ephemeral DuckDB | CI/CD testing | `ci_` |
+| `prod` | MotherDuck | Production | (none) |
+
+**Profile Configuration (`dbt/profiles.yml`):**
+
+```yaml
+healthcare_data_platform:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('DBT_DATABASE_PATH', 'target/healthcare.duckdb') }}"
+      schema: dev
+      threads: 4
+    
+    ci:
+      type: duckdb
+      path: ":memory:"
+      schema: ci
+      threads: 2
+    
+    prod:
+      type: duckdb
+      path: "md:healthcare_prod?motherduck_token={{ env_var('MOTHERDUCK_TOKEN') }}"
+      schema: main
+      threads: 8
+```
+
+**Environment Variables:**
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `SYNTHEA_DATA_PATH` | Path to Synthea CSV files | Yes |
+| `DBT_DATABASE_PATH` | Path to local DuckDB file | No (default: `target/healthcare.duckdb`) |
+| `MOTHERDUCK_TOKEN` | MotherDuck API token | Prod only |
+
+**Schema Strategy:**
+- Dev: All objects in `dev` schema
+- Prod: Layer-based schemas (`data_lake`, `raw_vault`, `business_vault`, `info_mart`, `reference`)
+
+### 8.8 Deployment (Future)
 
 **MotherDuck Production:**
 1. Create MotherDuck account and database
-2. Update dbt profile for MotherDuck connection
-3. Run dbt in production mode
-4. Schedule incremental runs (e.g., daily)
+2. Configure `MOTHERDUCK_TOKEN` environment variable
+3. Run dbt with `--target prod`
+4. Schedule incremental runs (e.g., daily via GitHub Actions)
 
 **Evidence.dev:**
 1. Connect Evidence to MotherDuck database
-2. Develop reports in `evidence_project/`
+2. Develop reports in `evidence/` directory
 3. Deploy to Evidence Cloud or self-host
 
 ## 9. AI Assistant Context
@@ -646,8 +998,39 @@ hashed_columns:
 - Great Expectations for data quality
 - dbt Cloud or Airflow for orchestration
 
+### 10.1 Dashboard Planning (TODO)
+
+Evidence.dev dashboards to be designed and implemented:
+
+**Claims Analytics:**
+- Claims trends over time (monthly/quarterly volume and cost)
+- Cost drivers by diagnosis category
+- Claim status distribution and aging
+- Payer mix and reimbursement rates
+
+**Provider Analytics:**
+- Provider performance scorecards
+- Utilization by provider and specialty
+- Cost per encounter by provider
+- Network adequacy metrics
+
+**Patient Analytics:**
+- Patient cohort analysis by condition
+- Population health metrics
+- Care gap identification
+- Patient journey visualization
+
+**Operational Dashboards:**
+- ETL load status and data freshness
+- Data quality metrics and anomaly alerts
+- Model run history and performance
+
 ---
 
-**Document Version:** 1.0  
+**Document Version:** 1.1  
 **Last Updated:** 2026-01-19  
 **Maintained By:** Dan Brickey
+
+**Change Log:**
+- v1.1: Added Synthea data dictionary, satellite history tracking, data ingestion strategy, source configuration, Info Mart details, incremental loading, testing strategy, environment configuration, dashboard TODO
+- v1.0: Initial specification
