@@ -13,6 +13,11 @@ The Healthcare Data Platform is a portfolio project demonstrating modern data en
 - Risk adjustment calculations
 - Quality measure reporting
 
+**Documentation Sources:** Supporting documents live in `docs/` to keep this specification focused:
+- `docs/project_metadata.md` - project metadata and ownership
+- `docs/planning_notes.md` - planning notes and delivery priorities
+- `docs/research_artifacts.md` - research links and open questions
+
 ## 2. Business Context
 
 ### Healthcare Payer Analytics Domain
@@ -199,8 +204,8 @@ healthcare-data-platform/
 │   ├── profiles.yml          # Connection profiles (local example)
 │   ├── packages.yml          # dbt package dependencies
 │   ├── models/               # dbt models
-│   │   ├── staging/          # Staging layer (raw → cleaned)
-│   │   │   ├── stg_synthea/  # Synthea source staging models
+│   │   ├── data_lake/        # Data Lake layer (raw → cleaned)
+│   │   │   ├── stg_synthea/  # Synthea source data lake models
 │   │   │   └── schema.yml    # Source and model definitions
 │   │   ├── raw_vault/        # Raw Data Vault entities
 │   │   │   ├── hubs/         # Hub tables
@@ -209,10 +214,10 @@ healthcare-data-platform/
 │   │   │   └── schema.yml
 │   │   ├── business_vault/   # Business rules and calculated fields
 │   │   │   └── schema.yml
-│   │   ├── marts/            # Business-focused dimensional models
-│   │   │   ├── claims/       # Claims analytics mart
-│   │   │   ├── patients/     # Patient analytics mart
-│   │   │   ├── providers/    # Provider analytics mart
+│   │   ├── info_mart/        # Business-focused dimensional models
+│   │   │   ├── claims/       # Claims analytics info mart
+│   │   │   ├── patients/     # Patient analytics info mart
+│   │   │   ├── providers/    # Provider analytics info mart
 │   │   │   └── schema.yml
 │   │   └── schema.yml        # Top-level schema
 │   ├── macros/               # Reusable dbt macros
@@ -235,12 +240,12 @@ healthcare-data-platform/
 
 ### 6.2 dbt Model Layers
 
-1. **Staging (`models/staging/`):**
+1. **Data Lake (`models/data_lake/`):**
    - Light transformations on raw data
    - Rename columns to standard conventions
    - Cast data types
    - Basic filtering and deduplication
-   - One staging model per source table
+   - One data lake model per source table
 
 2. **Raw Vault (`models/raw_vault/`):**
    - Hubs, Links, Satellites following Data Vault 2.0
@@ -254,7 +259,7 @@ healthcare-data-platform/
    - PITs (Point in Time) tables
    - Bridges for many-to-many relationships
 
-4. **Marts (`models/marts/`):**
+4. **Info Mart (`models/info_mart/`):**
    - Dimensional models (facts and dimensions)
    - Denormalized for query performance
    - Business-friendly column names
@@ -264,7 +269,7 @@ healthcare-data-platform/
 
 ### 7.1 dbt Models
 
-**Staging Models:**
+**Data Lake Models:**
 - Pattern: `stg_<source>__<entity>`
 - Examples: 
   - `stg_synthea__patients`
@@ -292,7 +297,7 @@ healthcare-data-platform/
   - `sat_claim_header`
   - `sat_encounter_details`
 
-**Marts:**
+**Info Mart Models:**
 - Pattern: `<domain>_<business_entity>`
 - Examples: 
   - `claims_monthly_summary`
@@ -374,9 +379,9 @@ healthcare-data-platform/
    ```
 
 2. **Develop Incrementally:**
-   - Start with staging models
+   - Start with data lake models
    - Build out Data Vault layer
-   - Create mart models
+   - Create info mart models
    - Write tests alongside models
 
 3. **Test Frequently:**
@@ -443,7 +448,7 @@ When generating code for this project, AI assistants should:
    - Adjust based on your local environment or CI/CD setup
 
 2. **Follow naming conventions strictly:**
-   - Staging: `stg_<source>__<entity>`
+   - Data Lake: `stg_<source>__<entity>`
    - Hubs: `hub_<entity>`
    - Links: `link_<entity1>_<entity2>`
    - Satellites: `sat_<parent>_<context>`
@@ -454,7 +459,7 @@ When generating code for this project, AI assistants should:
    - Use incremental models for Satellites
 
 4. **Reference existing models:**
-   - Check `models/staging/` for source data structures
+   - Check `models/data_lake/` for source data structures
    - Build on existing Hubs and Links
    - Maintain consistent grain in Satellites
 
@@ -540,7 +545,7 @@ select * from hashed
 - Use incremental models for large tables (claims, encounters)
 - Index hash keys for join performance
 - Partition by date where applicable
-- Aggregate at appropriate grain in marts
+- Aggregate at appropriate grain in info mart
 
 ## 10. Future Enhancements
 
@@ -556,5 +561,5 @@ select * from hashed
 ---
 
 **Document Version:** 1.0  
-**Last Updated:** 2026-01-20  
+**Last Updated:** 2026-01-19  
 **Maintained By:** Dan Brickey

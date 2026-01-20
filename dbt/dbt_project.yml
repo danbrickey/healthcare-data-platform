@@ -29,10 +29,10 @@ clean-targets:         # directories to be removed by `dbt clean`
 # Data Vault 2.0 model configurations
 models:
   healthcare_platform:
-    # Staging layer: clean and standardize source data
-    staging:
+    # Data Lake layer: clean and standardize source data
+    data_lake:
       +materialized: view
-      +schema: staging
+      +schema: data_lake
     
     # Raw Vault layer: Data Vault 2.0 core structures
     raw_vault:
@@ -50,7 +50,7 @@ models:
       +materialized: view
       +schema: business_vault
     
-    # Marts layer: reporting and analytics
-    marts:
+    # Info Mart layer: reporting and analytics
+    info_mart:
       +materialized: table
-      +schema: marts
+      +schema: info_mart

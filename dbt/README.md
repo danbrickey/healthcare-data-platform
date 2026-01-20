@@ -7,13 +7,13 @@ This dbt project implements a Data Vault 2.0 architecture for healthcare data tr
 ```
 dbt/
 ├── models/
-│   ├── staging/          # Source data cleaning and standardization
+│   ├── data_lake/        # Source data cleaning and standardization
 │   ├── raw_vault/        # Data Vault 2.0 core structures
 │   │   ├── hubs/         # Business keys
 │   │   ├── links/        # Relationships between hubs
 │   │   └── sats/         # Descriptive attributes
 │   ├── business_vault/   # Derived business logic
-│   └── marts/            # Reporting and analytics layer
+│   └── info_mart/        # Reporting and analytics layer
 ├── macros/               # Reusable SQL functions
 ├── seeds/                # Static reference data
 ├── tests/                # Data quality tests
@@ -42,7 +42,7 @@ dbt/
 
 ## Data Vault 2.0 Naming Conventions
 
-- **Staging models**: `stg_<source>__<entity>.sql`
+- **Data Lake models**: `stg_<source>__<entity>.sql`
 - **Hubs**: `hub_<business_key>.sql`
 - **Links**: `link_<relationship>.sql`
 - **Satellites**: `sat_<hub>_<descriptor>.sql`

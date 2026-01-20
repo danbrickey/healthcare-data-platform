@@ -4,4 +4,8 @@
 
 Healthcare Cost Analysis - Data Engineering Portfolio Project with DBT, DuckDB, Evidence, and Data Vault 2.0
 
-https://github.com/danbrickey/healthcare-data-platform
+## docs
+- project metadata: `docs/project_metadata.md`
+- planning notes: `docs/planning_notes.md`
+- research artifacts: `docs/research_artifacts.md`
+- detailed specification: `SPECIFICATION.md`
