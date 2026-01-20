@@ -1,0 +1,11 @@
+# profiles.yml for CI/CD environments
+# This file is used by GitHub Actions and other CI systems
+# For local development, copy profiles.yml.example to ~/.dbt/profiles.yml
+
+healthcare_platform:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ':memory:'
+      threads: 4
