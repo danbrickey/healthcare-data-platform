@@ -64,14 +64,19 @@ This project demonstrates proficiency in:
 - **Usage:** All data transformations, tests, and documentation
 
 ### Data Modeling Approach
-**Data Vault 2.0**
+**Data Vault 2.0 with automate_dv**
 - **Rationale:**
   - Highly scalable and flexible for evolving requirements
   - Separates business keys (Hubs), relationships (Links), and context (Satellites)
   - Excellent for healthcare data with complex relationships
   - Audit trail built-in with load dates
   - Supports incremental loading patterns
-- **Usage:** Core data warehouse modeling methodology
+- **Implementation:** [automate_dv](https://automate-dv.readthedocs.io/) dbt package
+  - Provides standardized macros for Hub, Link, and Satellite generation
+  - Ensures consistent Data Vault patterns across all models
+  - Reduces boilerplate code and potential errors
+  - Well-documented with active community support
+- **Usage:** Core data warehouse modeling methodology; all Raw Vault objects built using automate_dv macros
 
 ### Business Intelligence Layer
 **Evidence.dev**
@@ -84,6 +89,7 @@ This project demonstrates proficiency in:
 - **Usage:** Dashboards and reports for analytics consumers
 
 ### Additional Tools
+- **automate_dv:** dbt package for Data Vault 2.0 automation (Hubs, Links, Satellites)
 - **Git/GitHub:** Version control and collaboration
 - **Python:** Data generation and utility scripts
 - **Docker:** Containerization for consistent environments (future)
@@ -140,52 +146,79 @@ The Data Vault model consists of three core entity types:
 
 | Hub Name | Business Key | Description |
 |----------|--------------|-------------|
-| `hub_patient` | Patient ID | Unique patients in the system |
-| `hub_provider` | Provider NPI | Healthcare providers (physicians, facilities) |
-| `hub_organization` | Organization ID | Healthcare organizations/facilities |
-| `hub_claim` | Claim ID | Insurance claims |
-| `hub_encounter` | Encounter ID | Patient encounters (visits) |
-| `hub_diagnosis` | Diagnosis Code | ICD-10 diagnosis codes |
-| `hub_procedure` | Procedure Code | CPT/HCPCS procedure codes |
-| `hub_medication` | Medication Code | RxNorm medication codes |
-| `hub_payer` | Payer ID | Insurance payers/plans |
+| `h_patient` | Patient ID | Unique patients in the system |
+| `h_provider` | Provider NPI | Healthcare providers (physicians, facilities) |
+| `h_organization` | Organization ID | Healthcare organizations/facilities |
+| `h_claim` | Claim ID | Insurance claims |
+| `h_encounter` | Encounter ID | Patient encounters (visits) |
+| `h_diagnosis` | Diagnosis Code | ICD-10 diagnosis codes |
+| `h_procedure` | Procedure Code | CPT/HCPCS procedure codes |
+| `h_medication` | Medication Code | RxNorm medication codes |
+| `h_payer` | Payer ID | Insurance payers/plans |
 
 ### 5.3 Core Links
 
 | Link Name | Connected Hubs | Description |
 |-----------|----------------|-------------|
-| `link_claim_patient` | Claim, Patient | Associates claims with patients |
-| `link_claim_provider` | Claim, Provider | Associates claims with rendering providers |
-| `link_claim_diagnosis` | Claim, Diagnosis | Diagnoses on claims |
-| `link_claim_procedure` | Claim, Procedure | Procedures performed on claims |
-| `link_encounter_patient` | Encounter, Patient | Associates encounters with patients |
-| `link_encounter_provider` | Encounter, Provider | Associates encounters with providers |
-| `link_encounter_organization` | Encounter, Organization | Location of encounters |
-| `link_patient_payer` | Patient, Payer | Patient insurance coverage |
+| `l_claim_patient` | Claim, Patient | Associates claims with patients |
+| `l_claim_provider` | Claim, Provider | Associates claims with rendering providers |
+| `l_claim_diagnosis` | Claim, Diagnosis | Diagnoses on claims |
+| `l_claim_procedure` | Claim, Procedure | Procedures performed on claims |
+| `l_encounter_patient` | Encounter, Patient | Associates encounters with patients |
+| `l_encounter_provider` | Encounter, Provider | Associates encounters with providers |
+| `l_encounter_organization` | Encounter, Organization | Location of encounters |
+| `l_patient_payer` | Patient, Payer | Patient insurance coverage |
 
 ### 5.4 Key Satellites
 
 | Satellite Name | Parent Entity | Description |
 |----------------|---------------|-------------|
-| `sat_patient_demographics` | hub_patient | Patient demographics (name, DOB, gender, etc.) |
-| `sat_patient_address` | hub_patient | Patient addresses (mutable) |
-| `sat_provider_details` | hub_provider | Provider specialty, license info |
-| `sat_claim_header` | hub_claim | Claim totals, dates, status |
-| `sat_claim_line` | hub_claim | Individual claim line items |
-| `sat_encounter_details` | hub_encounter | Encounter type, dates, costs |
-| `sat_diagnosis_description` | hub_diagnosis | Diagnosis descriptions |
-| `sat_procedure_description` | hub_procedure | Procedure descriptions |
-| `sat_medication_details` | hub_medication | Medication names, dosages |
+| `s_patient_demographics` | h_patient | Patient demographics (name, DOB, gender, etc.) |
+| `s_patient_address` | h_patient | Patient addresses (mutable) |
+| `s_provider_details` | h_provider | Provider specialty, license info |
+| `s_claim_header` | h_claim | Claim totals, dates, status |
+| `s_claim_line` | h_claim | Individual claim line items |
+| `s_encounter_details` | h_encounter | Encounter type, dates, costs |
+| `s_diagnosis_description` | h_diagnosis | Diagnosis descriptions |
+| `s_procedure_description` | h_procedure | Procedure descriptions |
+| `s_medication_details` | h_medication | Medication names, dosages |
 
 ### 5.5 Data Vault Conventions
 
+- **Implementation Package:** All Raw Vault objects (Hubs, Links, Satellites) are built using [automate_dv](https://automate-dv.readthedocs.io/) macros
 - **Hash Keys:** All Hub and Link surrogate keys use hashing of business keys
-  - Recommended: Use `dbt_utils.generate_surrogate_key()` macro (SHA256 for dbt-utils v1.x+)
-  - Alternative: Use `dbt_utils.surrogate_key()` macro for MD5 hashing (legacy, v0.x)
-  - Choose one consistently across the project based on dbt-utils version
-- **Load Timestamps:** All entities include `load_date` and `record_source` columns
-- **Satellites:** Track historical changes with `load_date` as part of the key
+  - Use automate_dv's built-in hashing via `automate_dv.hash()` macro
+  - Default hash algorithm: MD5 (configurable in automate_dv)
+- **Standard Columns:** All entities include `load_date` and `record_source` columns (handled by automate_dv)
+- **Satellites:** Track historical changes with `load_date` as part of the key; use `hashdiff` for change detection
 - **Reference Tables:** Stored as Satellites for code descriptions
+- **Staging Layer:** Use `automate_dv.stage()` macro to prepare source data with derived columns and hashed keys
+
+### 5.6 Business Vault Entities
+
+The Business Vault extends the Raw Vault with derived business logic and computed values:
+
+| Entity Type | Prefix | Description |
+|-------------|--------|-------------|
+| Computed Satellite | `cs_` | Derived/calculated attributes from business rules |
+| Bridge | `brg_` | Pre-joined snapshots across Links for query performance |
+| PIT (Point-in-Time) | `pit_` | Temporal snapshots joining Hub with multiple Satellites |
+
+**Computed Satellites (`cs_`):**
+- Contain calculated fields derived from Raw Vault data
+- Apply business rules, transformations, and enrichments
+- Examples: `cs_patient_risk_score`, `cs_claim_cost_metrics`, `cs_provider_quality`
+
+**Bridges (`brg_`):**
+- Denormalize many-to-many relationships for easier querying
+- Snapshot of Link relationships at a point in time
+- Examples: `brg_claim_diagnosis`, `brg_patient_provider`
+
+**PIT Tables (`pit_`):**
+- Combine a Hub with its related Satellites at specific points in time
+- Enable efficient temporal queries without complex joins
+- Use automate_dv's `automate_dv.pit()` macro
+- Examples: `pit_patient`, `pit_claim`, `pit_encounter`
 
 ## 6. Project Structure
 
@@ -254,10 +287,9 @@ healthcare-data-platform/
    - Incremental loading strategy
 
 3. **Business Vault (`models/business_vault/`):**
-   - Calculated fields and derived data
-   - Business rules application
-   - PITs (Point in Time) tables
-   - Bridges for many-to-many relationships
+   - Computed Satellites (`cs_`): calculated fields and derived data with business rules
+   - Bridges (`brg_`): denormalized Link snapshots for query performance
+   - PIT tables (`pit_`): point-in-time Hub + Satellite joins for temporal queries
 
 4. **Info Mart (`models/info_mart/`):**
    - Dimensional models (facts and dimensions)
@@ -266,6 +298,15 @@ healthcare-data-platform/
    - Aggregated metrics
 
 ## 7. Naming Conventions
+
+### 7.0 General Naming Standard
+
+**Lower Snake Case:** All file names, variable names, and object names throughout the project must use lower snake case (e.g., `patient_demographics`, `claim_header`, `total_charge_amount`). This applies to:
+- SQL model files and YAML configuration files
+- Database objects (tables, views, columns)
+- Python variables, functions, and modules
+- dbt macros and variables
+- Any other named entities in the codebase
 
 ### 7.1 dbt Models
 
@@ -277,25 +318,46 @@ healthcare-data-platform/
   - `stg_synthea__encounters`
 
 **Hubs:**
-- Pattern: `hub_<entity>`
+- Pattern: `h_<entity>`
 - Examples: 
-  - `hub_patient`
-  - `hub_provider`
-  - `hub_claim`
+  - `h_patient`
+  - `h_provider`
+  - `h_claim`
 
 **Links:**
-- Pattern: `link_<entity1>_<entity2>[_<entity3>]`
+- Pattern: `l_<entity1>_<entity2>[_<entity3>]`
 - Examples: 
-  - `link_claim_patient`
-  - `link_claim_diagnosis`
-  - `link_encounter_provider_organization` (if 3+ entities)
+  - `l_claim_patient`
+  - `l_claim_diagnosis`
+  - `l_encounter_provider_organization` (if 3+ entities)
 
 **Satellites:**
-- Pattern: `sat_<parent>_<context>`
+- Pattern: `s_<parent>_<context>`
 - Examples: 
-  - `sat_patient_demographics`
-  - `sat_claim_header`
-  - `sat_encounter_details`
+  - `s_patient_demographics`
+  - `s_claim_header`
+  - `s_encounter_details`
+
+**Computed Satellites (Business Vault):**
+- Pattern: `cs_<parent>_<context>`
+- Examples: 
+  - `cs_patient_risk_score`
+  - `cs_claim_cost_metrics`
+  - `cs_provider_quality`
+
+**Bridges (Business Vault):**
+- Pattern: `brg_<entity1>_<entity2>`
+- Examples: 
+  - `brg_claim_diagnosis`
+  - `brg_patient_provider`
+  - `brg_encounter_procedure`
+
+**PIT Tables (Business Vault):**
+- Pattern: `pit_<entity>`
+- Examples: 
+  - `pit_patient`
+  - `pit_claim`
+  - `pit_encounter`
 
 **Info Mart Models:**
 - Pattern: `<domain>_<business_entity>`
@@ -448,10 +510,14 @@ When generating code for this project, AI assistants should:
    - Adjust based on your local environment or CI/CD setup
 
 2. **Follow naming conventions strictly:**
+   - All names use lower snake case
    - Data Lake: `stg_<source>__<entity>`
-   - Hubs: `hub_<entity>`
-   - Links: `link_<entity1>_<entity2>`
-   - Satellites: `sat_<parent>_<context>`
+   - Hubs: `h_<entity>`
+   - Links: `l_<entity1>_<entity2>`
+   - Satellites: `s_<parent>_<context>`
+   - Computed Satellites: `cs_<parent>_<context>`
+   - Bridges: `brg_<entity1>_<entity2>`
+   - PIT Tables: `pit_<entity>`
 
 3. **Use Data Vault patterns:**
    - Generate hash keys using MD5 of business keys
@@ -472,58 +538,80 @@ When generating code for this project, AI assistants should:
    - Lowercase keywords
    - Leading commas
    - Descriptive CTE names
-   - Use dbt-utils and automate-dv packages where applicable
 
-### 9.2 Common Patterns
+7. **Use automate_dv macros for all Raw Vault objects:**
+   - Hubs: `automate_dv.hub()`
+   - Links: `automate_dv.link()`
+   - Satellites: `automate_dv.sat()`
+   - Staging: `automate_dv.stage()`
 
-**Hub Template:**
+### 9.2 Common Patterns (automate_dv)
+
+**Staged Source Template:**
 ```sql
-{{ config(materialized='incremental', unique_key='hk_entity') }}
+{%- set yaml_metadata -%}
+source_model: 'stg_synthea__source'
+derived_columns:
+    record_source: '!synthea'
+    load_date: 'current_timestamp()'
+hashed_columns:
+    hk_entity: 'entity_id'
+{%- endset -%}
 
-with source as (
-    select * from {{ ref('stg_synthea__source') }}
-),
+{% set metadata_dict = fromyaml(yaml_metadata) %}
 
-hashed as (
-    select
-        {{ dbt_utils.generate_surrogate_key(['entity_id']) }} as hk_entity
-        , entity_id
-        , load_date
-        , record_source
-    from source
-    {% if is_incremental() %}
-    where load_date > (select max(load_date) from {{ this }})
-    {% endif %}
-)
-
-select * from hashed
+{{ automate_dv.stage(include_source_columns=true,
+                     source_model=metadata_dict['source_model'],
+                     derived_columns=metadata_dict['derived_columns'],
+                     hashed_columns=metadata_dict['hashed_columns']) }}
 ```
-*Note: `dbt_utils.generate_surrogate_key` uses SHA256 by default (v1.x+). For MD5 hashing, use the legacy `dbt_utils.surrogate_key` macro or configure accordingly.*
 
-**Link Template:**
+**Hub Template (h_):**
 ```sql
-{{ config(materialized='incremental', unique_key='hk_link') }}
+{%- set source_model = 'stg_synthea__source_hashed' -%}
+{%- set src_pk = 'hk_entity' -%}
+{%- set src_nk = 'entity_id' -%}
+{%- set src_ldts = 'load_date' -%}
+{%- set src_source = 'record_source' -%}
 
-with source as (
-    select * from {{ ref('stg_synthea__source') }}
-),
-
-hashed as (
-    select
-        {{ dbt_utils.generate_surrogate_key(['entity1_id', 'entity2_id']) }} as hk_link
-        , {{ dbt_utils.generate_surrogate_key(['entity1_id']) }} as hk_entity1
-        , {{ dbt_utils.generate_surrogate_key(['entity2_id']) }} as hk_entity2
-        , load_date
-        , record_source
-    from source
-    {% if is_incremental() %}
-    where load_date > (select max(load_date) from {{ this }})
-    {% endif %}
-)
-
-select * from hashed
+{{ automate_dv.hub(src_pk=src_pk,
+                   src_nk=src_nk,
+                   src_ldts=src_ldts,
+                   src_source=src_source,
+                   source_model=source_model) }}
 ```
-*Note: `dbt_utils.generate_surrogate_key` uses SHA256 by default (v1.x+). For MD5 hashing, use the legacy `dbt_utils.surrogate_key` macro or configure accordingly.*
+
+**Link Template (l_):**
+```sql
+{%- set source_model = 'stg_synthea__source_hashed' -%}
+{%- set src_pk = 'hk_entity1_entity2' -%}
+{%- set src_fk = ['hk_entity1', 'hk_entity2'] -%}
+{%- set src_ldts = 'load_date' -%}
+{%- set src_source = 'record_source' -%}
+
+{{ automate_dv.link(src_pk=src_pk,
+                    src_fk=src_fk,
+                    src_ldts=src_ldts,
+                    src_source=src_source,
+                    source_model=source_model) }}
+```
+
+**Satellite Template (s_):**
+```sql
+{%- set source_model = 'stg_synthea__source_hashed' -%}
+{%- set src_pk = 'hk_entity' -%}
+{%- set src_hashdiff = 'hd_entity_details' -%}
+{%- set src_payload = ['column1', 'column2', 'column3'] -%}
+{%- set src_ldts = 'load_date' -%}
+{%- set src_source = 'record_source' -%}
+
+{{ automate_dv.sat(src_pk=src_pk,
+                   src_hashdiff=src_hashdiff,
+                   src_payload=src_payload,
+                   src_ldts=src_ldts,
+                   src_source=src_source,
+                   source_model=source_model) }}
+```
 
 ### 9.3 Project-Specific Knowledge
 
