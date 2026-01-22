@@ -26,31 +26,41 @@ clean-targets:         # directories to be removed by `dbt clean`
 # Configuring models
 # Full documentation: https://docs.getdbt.com/docs/configuring-models
 
-# Data Vault 2.0 model configurations
+# Medallion Architecture model configurations
 models:
   healthcare_platform:
-    # Data Lake layer: clean and standardize source data
-    data_lake:
+    # Bronze layer: raw source data, minimal transformation
+    1_bronze_data_lake:
       +materialized: view
-      +schema: data_lake
+      +schema: bronze_data_lake
     
-    # Raw Vault layer: Data Vault 2.0 core structures
-    raw_vault:
+    # Silver layer: Data Vault 2.0 core structures
+    2_silver_raw_vault:
       +materialized: incremental
-      +schema: raw_vault
+      +schema: silver_raw_vault
       hubs:
-        +tags: ["hub"]
+        +tags: ["hub", "silver"]
       links:
-        +tags: ["link"]
+        +tags: ["link", "silver"]
       sats:
-        +tags: ["satellite"]
+        +tags: ["satellite", "silver"]
     
-    # Business Vault layer: derived business logic
-    business_vault:
+    # Gold layer: business vault and dimensional models
+    3_gold_business_vault:
+      +schema: gold_business_vault
+      business_vault:
+        +materialized: view
+        +schema: gold_business_vault
+      dimensional:
+        +materialized: table
+        +schema: gold_dimensional
+    
+    # Platinum layer: virtualized views by use case
+    4_platinum_info_mart:
       +materialized: view
-      +schema: business_vault
-    
-    # Info Mart layer: reporting and analytics
-    info_mart:
-      +materialized: table
-      +schema: info_mart
+      +schema: platinum_info_mart
+
+# AutomateDV configuration
+vars:
+  automate_dv_hash: 'MD5'
+  automate_dv_enable_ghost_record: false

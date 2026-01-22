@@ -1,0 +1,136 @@
+version: 2
+
+sources:
+  - name: synthea
+    description: Synthea synthetic healthcare data (CSV files)
+    meta:
+      external_location: "{{ env_var('SYNTHEA_DATA_PATH', 'data/synthea') }}"
+    tables:
+      - name: patients
+        description: Patient demographics and basic information
+        external:
+          location: "{{ source.meta.external_location }}/patients.csv"
+          options:
+            header: true
+        freshness:
+          warn_after: {count: 1, period: day}
+          error_after: {count: 2, period: day}
+      
+      - name: encounters
+        description: Healthcare encounters (visits, admissions)
+        external:
+          location: "{{ source.meta.external_location }}/encounters.csv"
+          options:
+            header: true
+      
+      - name: conditions
+        description: Patient conditions/diagnoses
+        external:
+          location: "{{ source.meta.external_location }}/conditions.csv"
+          options:
+            header: true
+      
+      - name: procedures
+        description: Medical procedures performed
+        external:
+          location: "{{ source.meta.external_location }}/procedures.csv"
+          options:
+            header: true
+      
+      - name: medications
+        description: Medication orders and dispenses
+        external:
+          location: "{{ source.meta.external_location }}/medications.csv"
+          options:
+            header: true
+      
+      - name: observations
+        description: Clinical observations (labs, vitals, assessments)
+        external:
+          location: "{{ source.meta.external_location }}/observations.csv"
+          options:
+            header: true
+      
+      - name: claims
+        description: Insurance claim headers
+        external:
+          location: "{{ source.meta.external_location }}/claims.csv"
+          options:
+            header: true
+      
+      - name: claims_transactions
+        description: Claim line items (individual services billed)
+        external:
+          location: "{{ source.meta.external_location }}/claims_transactions.csv"
+          options:
+            header: true
+      
+      - name: organizations
+        description: Healthcare organizations/facilities
+        external:
+          location: "{{ source.meta.external_location }}/organizations.csv"
+          options:
+            header: true
+      
+      - name: providers
+        description: Healthcare providers (physicians, practitioners)
+        external:
+          location: "{{ source.meta.external_location }}/providers.csv"
+          options:
+            header: true
+      
+      - name: payers
+        description: Insurance payers/companies
+        external:
+          location: "{{ source.meta.external_location }}/payers.csv"
+          options:
+            header: true
+      
+      - name: payer_transitions
+        description: Patient insurance coverage changes over time
+        external:
+          location: "{{ source.meta.external_location }}/payer_transitions.csv"
+          options:
+            header: true
+      
+      - name: allergies
+        description: Patient allergies
+        external:
+          location: "{{ source.meta.external_location }}/allergies.csv"
+          options:
+            header: true
+      
+      - name: immunizations
+        description: Immunization records
+        external:
+          location: "{{ source.meta.external_location }}/immunizations.csv"
+          options:
+            header: true
+      
+      - name: careplans
+        description: Care plan records
+        external:
+          location: "{{ source.meta.external_location }}/careplans.csv"
+          options:
+            header: true
+      
+      - name: imaging_studies
+        description: Medical imaging study metadata
+        external:
+          location: "{{ source.meta.external_location }}/imaging_studies.csv"
+          options:
+            header: true
+      
+      - name: devices
+        description: Medical devices
+        external:
+          location: "{{ source.meta.external_location }}/devices.csv"
+          options:
+            header: true
+      
+      - name: supplies
+        description: Medical supplies
+        external:
+          location: "{{ source.meta.external_location }}/supplies.csv"
+          options:
+            header: true
