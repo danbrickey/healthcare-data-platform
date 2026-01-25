@@ -1,12 +1,19 @@
 # profiles.yml for healthcare_platform dbt project
-# Copy this file to ~/.dbt/profiles.yml
+# This is an example configuration. The actual profiles.yml supports:
+#   - dev target: Uses file-based database at ../data/healthcare.duckdb
+#   - ci target: Uses in-memory database for CI/CD
+#
+# Set DBT_TARGET=ci for CI environments, or leave unset for local dev.
 # NOTE: dbt commands should be run from the dbt/ directory
-# If running from a different location, adjust the database path accordingly
 
 healthcare_platform:
-  target: dev
+  target: "{{ env_var('DBT_TARGET', 'dev') }}"
   outputs:
     dev:
       type: duckdb
       path: '../data/healthcare.duckdb'
+      threads: 4
+    ci:
+      type: duckdb
+      path: ':memory:'
       threads: 4

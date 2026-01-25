@@ -1,11 +1,15 @@
-# profiles.yml for CI/CD environments
-# This file is used by GitHub Actions and other CI systems
-# For local development, copy profiles.yml.example to ~/.dbt/profiles.yml
+# profiles.yml for healthcare_platform dbt project
+# For local development, uses file-based database
+# For CI/CD, set DBT_TARGET=ci to use in-memory database
 
 healthcare_platform:
-  target: dev
+  target: "{{ env_var('DBT_TARGET', 'dev') }}"
   outputs:
     dev:
+      type: duckdb
+      path: '../data/healthcare.duckdb'
+      threads: 4
+    ci:
       type: duckdb
       path: ':memory:'
       threads: 4

@@ -25,6 +25,8 @@ jobs:
           
       - name: Run dbt
         working-directory: ./dbt
+        env:
+          DBT_TARGET: ci
         run: |
           dbt deps
           dbt build --profiles-dir .
