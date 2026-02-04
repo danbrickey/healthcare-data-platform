@@ -1,136 +1,277 @@
 version: 2
 
+# Synthea source definitions for DuckDB external CSV files
+# Uses dbt-duckdb's external source capability to read CSV files directly
+
 sources:
   - name: synthea
     description: Synthea synthetic healthcare data (CSV files)
     meta:
-      external_location: "{{ env_var('SYNTHEA_DATA_PATH', 'data/synthea') }}"
+      # Pattern for CSV file locations - {name} is replaced with table name
+      external_location: "read_csv('../data/synthea/{name}.csv', auto_detect=true, header=true)"
+    
     tables:
       - name: patients
         description: Patient demographics and basic information
-        external:
-          location: "{{ source.meta.external_location }}/patients.csv"
-          options:
-            header: true
-        freshness:
-          warn_after: {count: 1, period: day}
-          error_after: {count: 2, period: day}
+        columns:
+          - name: Id
+            description: Unique patient identifier (UUID)
+            data_tests:
+              - unique
+              - not_null
+          - name: BIRTHDATE
+            description: Patient date of birth
+          - name: DEATHDATE
+            description: Patient date of death (null if alive)
+          - name: SSN
+            description: Social Security Number
+          - name: FIRST
+            description: Patient first name
+          - name: LAST
+            description: Patient last name
+          - name: GENDER
+            description: Patient gender (M/F)
+          - name: RACE
+            description: Patient race
+          - name: ETHNICITY
+            description: Patient ethnicity
       
       - name: encounters
         description: Healthcare encounters (visits, admissions)
-        external:
-          location: "{{ source.meta.external_location }}/encounters.csv"
-          options:
-            header: true
+        columns:
+          - name: Id
+            description: Unique encounter identifier (UUID)
+            data_tests:
+              - unique
+              - not_null
+          - name: PATIENT
+            description: Reference to patient ID
+            data_tests:
+              - not_null
+          - name: START
+            description: Encounter start datetime
+          - name: STOP
+            description: Encounter end datetime
+          - name: ENCOUNTERCLASS
+            description: Type of encounter (ambulatory, emergency, inpatient, etc.)
+          - name: CODE
+            description: Encounter reason code
+          - name: DESCRIPTION
+            description: Encounter description
       
       - name: conditions
         description: Patient conditions/diagnoses
-        external:
-          location: "{{ source.meta.external_location }}/conditions.csv"
-          options:
-            header: true
+        columns:
+          - name: PATIENT
+            description: Reference to patient ID
+            data_tests:
+              - not_null
+          - name: ENCOUNTER
+            description: Reference to encounter ID
+          - name: CODE
+            description: SNOMED-CT condition code
+          - name: DESCRIPTION
+            description: Condition description
+          - name: START
+            description: Condition onset date
+          - name: STOP
+            description: Condition resolution date (null if ongoing)
       
       - name: procedures
         description: Medical procedures performed
-        external:
-          location: "{{ source.meta.external_location }}/procedures.csv"
-          options:
-            header: true
+        columns:
+          - name: PATIENT
+            description: Reference to patient ID
+          - name: ENCOUNTER
+            description: Reference to encounter ID
+          - name: CODE
+            description: SNOMED-CT procedure code
+          - name: DESCRIPTION
+            description: Procedure description
+          - name: DATE
+            description: Procedure date
       
       - name: medications
         description: Medication orders and dispenses
-        external:
-          location: "{{ source.meta.external_location }}/medications.csv"
-          options:
-            header: true
+        columns:
+          - name: PATIENT
+            description: Reference to patient ID
+          - name: ENCOUNTER
+            description: Reference to encounter ID
+          - name: CODE
+            description: RxNorm medication code
+          - name: DESCRIPTION
+            description: Medication description
+          - name: START
+            description: Medication start date
+          - name: STOP
+            description: Medication stop date
       
       - name: observations
         description: Clinical observations (labs, vitals, assessments)
-        external:
-          location: "{{ source.meta.external_location }}/observations.csv"
-          options:
-            header: true
-      
-      - name: claims
-        description: Insurance claim headers
-        external:
-          location: "{{ source.meta.external_location }}/claims.csv"
-          options:
-            header: true
-      
-      - name: claims_transactions
-        description: Claim line items (individual services billed)
-        external:
-          location: "{{ source.meta.external_location }}/claims_transactions.csv"
-          options:
-            header: true
+        columns:
+          - name: PATIENT
+            description: Reference to patient ID
+          - name: ENCOUNTER
+            description: Reference to encounter ID
+          - name: CODE
+            description: LOINC observation code
+          - name: DESCRIPTION
+            description: Observation description
+          - name: VALUE
+            description: Observation value
+          - name: UNITS
+            description: Observation units
+          - name: DATE
+            description: Observation date
       
       - name: organizations
         description: Healthcare organizations/facilities
-        external:
-          location: "{{ source.meta.external_location }}/organizations.csv"
-          options:
-            header: true
+        columns:
+          - name: Id
+            description: Unique organization identifier
+            data_tests:
+              - unique
+              - not_null
+          - name: NAME
+            description: Organization name
+          - name: ADDRESS
+            description: Organization address
+          - name: CITY
+            description: Organization city
+          - name: STATE
+            description: Organization state
       
       - name: providers
         description: Healthcare providers (physicians, practitioners)
-        external:
-          location: "{{ source.meta.external_location }}/providers.csv"
-          options:
-            header: true
+        columns:
+          - name: Id
+            description: Unique provider identifier
+            data_tests:
+              - unique
+              - not_null
+          - name: NAME
+            description: Provider name
+          - name: SPECIALITY
+            description: Provider specialty
+          - name: ORGANIZATION
+            description: Reference to organization ID
       
       - name: payers
         description: Insurance payers/companies
-        external:
-          location: "{{ source.meta.external_location }}/payers.csv"
-          options:
-            header: true
+        columns:
+          - name: Id
+            description: Unique payer identifier
+            data_tests:
+              - unique
+              - not_null
+          - name: NAME
+            description: Payer name
       
       - name: payer_transitions
         description: Patient insurance coverage changes over time
-        external:
-          location: "{{ source.meta.external_location }}/payer_transitions.csv"
-          options:
-            header: true
+        columns:
+          - name: PATIENT
+            description: Reference to patient ID
+          - name: START_YEAR
+            description: Coverage start year
+          - name: END_YEAR
+            description: Coverage end year
+          - name: PAYER
+            description: Reference to payer ID
       
       - name: allergies
         description: Patient allergies
-        external:
-          location: "{{ source.meta.external_location }}/allergies.csv"
-          options:
-            header: true
+        columns:
+          - name: PATIENT
+            description: Reference to patient ID
+          - name: ENCOUNTER
+            description: Reference to encounter ID
+          - name: CODE
+            description: Allergy code
+          - name: DESCRIPTION
+            description: Allergy description
+          - name: START
+            description: Allergy onset date
+          - name: STOP
+            description: Allergy resolution date
       
       - name: immunizations
         description: Immunization records
-        external:
-          location: "{{ source.meta.external_location }}/immunizations.csv"
-          options:
-            header: true
+        columns:
+          - name: PATIENT
+            description: Reference to patient ID
+          - name: ENCOUNTER
+            description: Reference to encounter ID
+          - name: CODE
+            description: CVX immunization code
+          - name: DESCRIPTION
+            description: Immunization description
+          - name: DATE
+            description: Immunization date
       
       - name: careplans
         description: Care plan records
-        external:
-          location: "{{ source.meta.external_location }}/careplans.csv"
-          options:
-            header: true
+        columns:
+          - name: PATIENT
+            description: Reference to patient ID
+          - name: ENCOUNTER
+            description: Reference to encounter ID
+          - name: CODE
+            description: Care plan code
+          - name: DESCRIPTION
+            description: Care plan description
+          - name: START
+            description: Care plan start date
+          - name: STOP
+            description: Care plan end date
       
       - name: imaging_studies
         description: Medical imaging study metadata
-        external:
-          location: "{{ source.meta.external_location }}/imaging_studies.csv"
-          options:
-            header: true
+        columns:
+          - name: PATIENT
+            description: Reference to patient ID
+          - name: ENCOUNTER
+            description: Reference to encounter ID
+          - name: BODYSITE_CODE
+            description: Body site code
+          - name: BODYSITE_DESCRIPTION
+            description: Body site description
+          - name: MODALITY_CODE
+            description: Imaging modality code
+          - name: MODALITY_DESCRIPTION
+            description: Imaging modality description
+          - name: DATE
+            description: Study date
       
       - name: devices
         description: Medical devices
-        external:
-          location: "{{ source.meta.external_location }}/devices.csv"
-          options:
-            header: true
+        columns:
+          - name: PATIENT
+            description: Reference to patient ID
+          - name: ENCOUNTER
+            description: Reference to encounter ID
+          - name: CODE
+            description: Device code
+          - name: DESCRIPTION
+            description: Device description
+          - name: START
+            description: Device start date
+          - name: STOP
+            description: Device stop date
       
       - name: supplies
         description: Medical supplies
-        external:
-          location: "{{ source.meta.external_location }}/supplies.csv"
-          options:
-            header: true
+        columns:
+          - name: PATIENT
+            description: Reference to patient ID
+          - name: ENCOUNTER
+            description: Reference to encounter ID
+          - name: CODE
+            description: Supply code
+          - name: DESCRIPTION
+            description: Supply description
+          - name: DATE
+            description: Supply date
+          - name: QUANTITY
+            description: Supply quantity

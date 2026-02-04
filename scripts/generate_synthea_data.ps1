@@ -1,5 +1,9 @@
 # Synthea Data Generation Script (Windows PowerShell)
 # Generates synthetic healthcare data using Synthea
+#
+# ALTERNATIVE: If Java is not available, you can download pre-generated sample data:
+#   Invoke-WebRequest -Uri "https://synthetichealth.github.io/synthea-sample-data/downloads/synthea_sample_data_csv_apr2020.zip" -OutFile "data/synthea_sample.zip"
+#   Expand-Archive -Path "data/synthea_sample.zip" -DestinationPath "data/synthea" -Force
 
 param(
     [int]$PatientCount = 1000,

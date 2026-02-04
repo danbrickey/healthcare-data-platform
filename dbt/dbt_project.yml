@@ -64,3 +64,9 @@ models:
 vars:
   automate_dv_hash: 'MD5'
   automate_dv_enable_ghost_record: false
+
+# Dispatch configuration for DuckDB adapter support
+# This allows our project's DuckDB-specific macros to override AutomateDV defaults
+dispatch:
+  - macro_namespace: automate_dv
+    search_order: ['healthcare_platform', 'automate_dv']
