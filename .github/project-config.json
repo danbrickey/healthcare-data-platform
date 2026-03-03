@@ -1,0 +1,62 @@
+{
+  "project": {
+    "id": "PVT_kwHOCQ_h4c4BQqqI",
+    "number": 2,
+    "url": "https://github.com/users/danbrickey/projects/2",
+    "owner": "danbrickey",
+    "repo": "danbrickey/healthcare-data-platform"
+  },
+  "fields": {
+    "status": {
+      "id": "PVTSSF_lAHOCQ_h4c4BQqqIzg-uGAU",
+      "options": {
+        "Backlog": "8b583ec0",
+        "Ready": "2f158079",
+        "In Progress": "607efbf0",
+        "In Review": "d31f0f15",
+        "Done": "2e640169",
+        "Blocked": "c79825f7"
+      }
+    },
+    "type": {
+      "id": "PVTSSF_lAHOCQ_h4c4BQqqIzg-uGDs",
+      "options": {
+        "Epic": "6785bd7a",
+        "Feature": "4113c982",
+        "Story": "00efa4ed",
+        "Bug": "4eff664a",
+        "Spike": "1e238c1b"
+      }
+    },
+    "points": {
+      "id": "PVTSSF_lAHOCQ_h4c4BQqqIzg-uGEQ",
+      "options": {
+        "1": "bca3ea35",
+        "2": "4d835e68",
+        "3": "32308778",
+        "5": "cec4d0de",
+        "8": "5eadf86e",
+        "13": "92095dee"
+      }
+    },
+    "priority": {
+      "id": "PVTSSF_lAHOCQ_h4c4BQqqIzg-uGEU",
+      "options": {
+        "Critical": "bb6fe689",
+        "High": "38f2bb34",
+        "Medium": "694b0f87",
+        "Low": "cd2b7da1"
+      }
+    },
+    "layer": {
+      "id": "PVTSSF_lAHOCQ_h4c4BQqqIzg-uGEY",
+      "options": {
+        "Bronze": "20441755",
+        "Silver": "b6eca4df",
+        "Gold": "c121e0b9",
+        "Platinum": "b715d2c6",
+        "Infrastructure": "ffe0827a"
+      }
+    }
+  }
+}
