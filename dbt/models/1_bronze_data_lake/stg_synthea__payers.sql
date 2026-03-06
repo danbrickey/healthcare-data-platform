@@ -1,0 +1,23 @@
+SELECT
+    Id                                              AS payer_id,
+    NAME                                            AS name,
+    ADDRESS                                         AS address,
+    CITY                                            AS city,
+    STATE_HEADQUARTERED                             AS state_headquartered,
+    ZIP                                             AS zip,
+    PHONE                                           AS phone,
+    CAST(AMOUNT_COVERED AS DECIMAL(18, 2))          AS amount_covered,
+    CAST(AMOUNT_UNCOVERED AS DECIMAL(18, 2))        AS amount_uncovered,
+    CAST(REVENUE AS DECIMAL(18, 2))                 AS revenue,
+    CAST(COVERED_ENCOUNTERS AS INTEGER)             AS covered_encounters,
+    CAST(UNCOVERED_ENCOUNTERS AS INTEGER)           AS uncovered_encounters,
+    CAST(COVERED_MEDICATIONS AS INTEGER)            AS covered_medications,
+    CAST(UNCOVERED_MEDICATIONS AS INTEGER)          AS uncovered_medications,
+    CAST(COVERED_PROCEDURES AS INTEGER)             AS covered_procedures,
+    CAST(UNCOVERED_PROCEDURES AS INTEGER)           AS uncovered_procedures,
+    CAST(COVERED_IMMUNIZATIONS AS INTEGER)          AS covered_immunizations,
+    CAST(UNCOVERED_IMMUNIZATIONS AS INTEGER)        AS uncovered_immunizations,
+    CAST(UNIQUE_CUSTOMERS AS INTEGER)               AS unique_customers,
+    CAST(QOLS_AVG AS DECIMAL(10, 4))               AS qols_avg,
+    CAST(MEMBER_MONTHS AS INTEGER)                  AS member_months
+FROM {{ source('synthea', 'payers') }}
