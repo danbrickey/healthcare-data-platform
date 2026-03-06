@@ -1,0 +1,67 @@
+version: 2
+
+models:
+  # --- Business Vault ---
+  - name: as_of_date_spine
+    description: "Daily date spine from 2020-01-01 to current date, used by PIT tables."
+    columns:
+      - name: as_of_date
+        description: "Calendar date"
+        tests:
+          - unique
+          - not_null
+
+  - name: pit_patient
+    description: "Patient point-in-time table — enables efficient temporal queries across patient satellites."
+    columns:
+      - name: hk_patient
+        description: "Hash key FK to h_patient"
+        tests:
+          - not_null
+      - name: as_of_date
+        description: "Point-in-time date for temporal queries"
+        tests:
+          - not_null
+
+  # --- Dimensional ---
+  - name: dim_patient
+    description: "Patient dimension — denormalized hub + latest satellite state with business-friendly columns."
+    columns:
+      - name: patient_key
+        description: "Surrogate key (hk_patient)"
+        tests:
+          - unique
+          - not_null
+      - name: patient_id
+        description: "Natural business key"
+        tests:
+          - not_null
+      - name: full_name
+        description: "Concatenated first + last name"
+        tests:
+          - not_null
+
+  - name: fct_encounter
+    description: "Encounter fact table — healthcare encounter events with cost measures."
+    columns:
+      - name: encounter_key
+        description: "Surrogate key (hk_encounter)"
+        tests:
+          - unique
+          - not_null
+      - name: patient_key
+        description: "FK to dim_patient"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_patient')
+                field: patient_key
+      - name: encounter_id
+        description: "Natural business key"
+        tests:
+          - not_null
+      - name: encounter_date
+        description: "Date key for temporal analysis"
+        tests:
+          - not_null
