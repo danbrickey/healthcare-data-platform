@@ -29,6 +29,16 @@ This project uses GitHub Projects + Claude Code skills for work tracking.
 
 **Specs live in:** `docs/specs/` — linked to GitHub issues via front matter
 
+### Issue-First Workflow (Required)
+
+All work must be tracked via GitHub Issues before code changes begin:
+1. Create an **Epic** issue for each phase or major initiative
+2. Create **Feature** issues under the epic for each deliverable
+3. Reference the issue number in commit messages (e.g., `Issue #15`)
+4. Close issues when the feature is complete and verified
+
+Do not start coding without a linked issue. If exploratory work leads to a commit, backfill the issue before or alongside the commit.
+
 ## Naming Conventions (from SPECIFICATION.md)
 
 - Data lake: `stg_<source>__<entity>`
@@ -40,6 +50,8 @@ This project uses GitHub Projects + Claude Code skills for work tracking.
 
 ## dbt Commands
 
+Note: `dbt-fusion` (Rust-based) is on the PATH but does not support DuckDB. Use Python dbt via `python -c "from dbt.cli.main import dbtRunner; ..."` or ensure dbt-duckdb is installed (`pip install dbt-duckdb`).
+
 ```bash
 cd dbt
 dbt deps          # Install packages
@@ -48,3 +60,15 @@ dbt build         # Run all models + tests
 dbt run -s +model_name  # Run model with upstream deps
 dbt test -s model_name  # Test specific model
 ```
+
+## Evidence Commands
+
+```bash
+cd evidence
+npm install              # Install dependencies
+npx evidence sources     # Rebuild source data from DuckDB
+npx evidence dev         # Start dev server (hot-reload)
+npx evidence build       # Production build (static site)
+```
+
+Evidence source queries live in `evidence/sources/healthcare/` and connect to `data/healthcare.duckdb`. The metadata queries read dbt artifacts via DuckDB's `read_json_auto()`.
