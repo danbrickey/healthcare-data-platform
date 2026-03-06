@@ -1,0 +1,4 @@
+name: healthcare
+type: duckdb
+options:
+  filename: ../../../data/healthcare.duckdb
