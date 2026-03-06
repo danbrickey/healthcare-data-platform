@@ -1,0 +1,183 @@
+version: 2
+
+models:
+  - name: stg_synthea__patients
+    description: Staged patient demographics from Synthea. Adds type casts and snake_case aliases.
+    columns:
+      - name: patient_id
+        description: Unique patient identifier (UUID)
+        data_tests:
+          - unique
+          - not_null
+
+  - name: stg_synthea__encounters
+    description: Staged healthcare encounters (visits, admissions) from Synthea.
+    columns:
+      - name: encounter_id
+        description: Unique encounter identifier (UUID)
+        data_tests:
+          - unique
+          - not_null
+      - name: patient_id
+        description: Reference to patient
+        data_tests:
+          - not_null
+
+  - name: stg_synthea__conditions
+    description: Staged patient conditions/diagnoses from Synthea.
+    columns:
+      - name: patient_id
+        description: Reference to patient
+        data_tests:
+          - not_null
+      - name: encounter_id
+        description: Reference to encounter
+        data_tests:
+          - not_null
+
+  - name: stg_synthea__procedures
+    description: Staged medical procedures from Synthea.
+    columns:
+      - name: patient_id
+        description: Reference to patient
+        data_tests:
+          - not_null
+      - name: encounter_id
+        description: Reference to encounter
+        data_tests:
+          - not_null
+
+  - name: stg_synthea__medications
+    description: Staged medication orders and dispenses from Synthea.
+    columns:
+      - name: patient_id
+        description: Reference to patient
+        data_tests:
+          - not_null
+      - name: encounter_id
+        description: Reference to encounter
+        data_tests:
+          - not_null
+
+  - name: stg_synthea__observations
+    description: Staged clinical observations (labs, vitals, assessments) from Synthea.
+    columns:
+      - name: patient_id
+        description: Reference to patient
+        data_tests:
+          - not_null
+      - name: encounter_id
+        description: Reference to encounter (nullable for some observation types)
+
+  - name: stg_synthea__organizations
+    description: Staged healthcare organizations/facilities from Synthea.
+    columns:
+      - name: organization_id
+        description: Unique organization identifier (UUID)
+        data_tests:
+          - unique
+          - not_null
+
+  - name: stg_synthea__providers
+    description: Staged healthcare providers (physicians, practitioners) from Synthea.
+    columns:
+      - name: provider_id
+        description: Unique provider identifier (UUID)
+        data_tests:
+          - unique
+          - not_null
+
+  - name: stg_synthea__payers
+    description: Staged insurance payers/companies from Synthea.
+    columns:
+      - name: payer_id
+        description: Unique payer identifier (UUID)
+        data_tests:
+          - unique
+          - not_null
+
+  - name: stg_synthea__payer_transitions
+    description: Staged patient insurance coverage transitions from Synthea.
+    columns:
+      - name: patient_id
+        description: Reference to patient
+        data_tests:
+          - not_null
+      - name: payer_id
+        description: Reference to payer
+        data_tests:
+          - not_null
+
+  - name: stg_synthea__allergies
+    description: Staged patient allergies from Synthea.
+    columns:
+      - name: patient_id
+        description: Reference to patient
+        data_tests:
+          - not_null
+      - name: encounter_id
+        description: Reference to encounter
+        data_tests:
+          - not_null
+
+  - name: stg_synthea__immunizations
+    description: Staged immunization records from Synthea.
+    columns:
+      - name: patient_id
+        description: Reference to patient
+        data_tests:
+          - not_null
+      - name: encounter_id
+        description: Reference to encounter
+        data_tests:
+          - not_null
+
+  - name: stg_synthea__careplans
+    description: Staged care plan records from Synthea.
+    columns:
+      - name: careplan_id
+        description: Unique careplan identifier (UUID)
+        data_tests:
+          - unique
+          - not_null
+      - name: patient_id
+        description: Reference to patient
+        data_tests:
+          - not_null
+
+  - name: stg_synthea__imaging_studies
+    description: Staged medical imaging study metadata from Synthea.
+    columns:
+      - name: imaging_study_id
+        description: Unique imaging study identifier (UUID)
+        data_tests:
+          - unique
+          - not_null
+      - name: patient_id
+        description: Reference to patient
+        data_tests:
+          - not_null
+
+  - name: stg_synthea__devices
+    description: Staged medical device records from Synthea.
+    columns:
+      - name: patient_id
+        description: Reference to patient
+        data_tests:
+          - not_null
+      - name: encounter_id
+        description: Reference to encounter
+        data_tests:
+          - not_null
+
+  - name: stg_synthea__supplies
+    description: Staged medical supply records from Synthea.
+    columns:
+      - name: patient_id
+        description: Reference to patient
+        data_tests:
+          - not_null
+      - name: encounter_id
+        description: Reference to encounter
+        data_tests:
+          - not_null

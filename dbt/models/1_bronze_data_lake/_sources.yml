@@ -9,7 +9,7 @@ sources:
     meta:
       # Pattern for CSV file locations - {name} is replaced with table name
       external_location: "read_csv('../data/synthea/{name}.csv', auto_detect=true, header=true)"
-    
+
     tables:
       - name: patients
         description: Patient demographics and basic information
@@ -25,17 +25,49 @@ sources:
             description: Patient date of death (null if alive)
           - name: SSN
             description: Social Security Number
+          - name: DRIVERS
+            description: Driver's license number
+          - name: PASSPORT
+            description: Passport number
+          - name: PREFIX
+            description: Name prefix (Mr., Mrs., etc.)
           - name: FIRST
             description: Patient first name
           - name: LAST
             description: Patient last name
-          - name: GENDER
-            description: Patient gender (M/F)
+          - name: SUFFIX
+            description: Name suffix (Jr., Sr., etc.)
+          - name: MAIDEN
+            description: Maiden name
+          - name: MARITAL
+            description: Marital status (M/S)
           - name: RACE
             description: Patient race
           - name: ETHNICITY
             description: Patient ethnicity
-      
+          - name: GENDER
+            description: Patient gender (M/F)
+          - name: BIRTHPLACE
+            description: Patient birthplace
+          - name: ADDRESS
+            description: Street address
+          - name: CITY
+            description: City
+          - name: STATE
+            description: State
+          - name: COUNTY
+            description: County
+          - name: ZIP
+            description: ZIP code
+          - name: LAT
+            description: Latitude
+          - name: LON
+            description: Longitude
+          - name: HEALTHCARE_EXPENSES
+            description: Total lifetime healthcare expenses
+          - name: HEALTHCARE_COVERAGE
+            description: Total lifetime healthcare coverage
+
       - name: encounters
         description: Healthcare encounters (visits, admissions)
         columns:
@@ -44,24 +76,44 @@ sources:
             data_tests:
               - unique
               - not_null
-          - name: PATIENT
-            description: Reference to patient ID
-            data_tests:
-              - not_null
           - name: START
             description: Encounter start datetime
           - name: STOP
             description: Encounter end datetime
+          - name: PATIENT
+            description: Reference to patient ID
+            data_tests:
+              - not_null
+          - name: ORGANIZATION
+            description: Reference to organization ID
+          - name: PROVIDER
+            description: Reference to provider ID
+          - name: PAYER
+            description: Reference to payer ID
           - name: ENCOUNTERCLASS
             description: Type of encounter (ambulatory, emergency, inpatient, etc.)
           - name: CODE
             description: Encounter reason code
           - name: DESCRIPTION
             description: Encounter description
-      
+          - name: BASE_ENCOUNTER_COST
+            description: Base cost of the encounter
+          - name: TOTAL_CLAIM_COST
+            description: Total claim cost
+          - name: PAYER_COVERAGE
+            description: Amount covered by payer
+          - name: REASONCODE
+            description: Reason code for the encounter
+          - name: REASONDESCRIPTION
+            description: Reason description
+
       - name: conditions
         description: Patient conditions/diagnoses
         columns:
+          - name: START
+            description: Condition onset date
+          - name: STOP
+            description: Condition resolution date (null if ongoing)
           - name: PATIENT
             description: Reference to patient ID
             data_tests:
@@ -72,14 +124,12 @@ sources:
             description: SNOMED-CT condition code
           - name: DESCRIPTION
             description: Condition description
-          - name: START
-            description: Condition onset date
-          - name: STOP
-            description: Condition resolution date (null if ongoing)
-      
+
       - name: procedures
         description: Medical procedures performed
         columns:
+          - name: DATE
+            description: Procedure date
           - name: PATIENT
             description: Reference to patient ID
           - name: ENCOUNTER
@@ -88,28 +138,48 @@ sources:
             description: SNOMED-CT procedure code
           - name: DESCRIPTION
             description: Procedure description
-          - name: DATE
-            description: Procedure date
-      
+          - name: BASE_COST
+            description: Base cost of procedure
+          - name: REASONCODE
+            description: Reason code
+          - name: REASONDESCRIPTION
+            description: Reason description
+
       - name: medications
         description: Medication orders and dispenses
         columns:
+          - name: START
+            description: Medication start date
+          - name: STOP
+            description: Medication stop date
           - name: PATIENT
             description: Reference to patient ID
+          - name: PAYER
+            description: Reference to payer ID
           - name: ENCOUNTER
             description: Reference to encounter ID
           - name: CODE
             description: RxNorm medication code
           - name: DESCRIPTION
             description: Medication description
-          - name: START
-            description: Medication start date
-          - name: STOP
-            description: Medication stop date
-      
+          - name: BASE_COST
+            description: Base cost of medication
+          - name: PAYER_COVERAGE
+            description: Amount covered by payer
+          - name: DISPENSES
+            description: Number of dispenses
+          - name: TOTALCOST
+            description: Total cost
+          - name: REASONCODE
+            description: Reason code
+          - name: REASONDESCRIPTION
+            description: Reason description
+
       - name: observations
         description: Clinical observations (labs, vitals, assessments)
         columns:
+          - name: DATE
+            description: Observation date
           - name: PATIENT
             description: Reference to patient ID
           - name: ENCOUNTER
@@ -122,9 +192,9 @@ sources:
             description: Observation value
           - name: UNITS
             description: Observation units
-          - name: DATE
-            description: Observation date
-      
+          - name: TYPE
+            description: Observation type
+
       - name: organizations
         description: Healthcare organizations/facilities
         columns:
@@ -141,7 +211,19 @@ sources:
             description: Organization city
           - name: STATE
             description: Organization state
-      
+          - name: ZIP
+            description: ZIP code
+          - name: LAT
+            description: Latitude
+          - name: LON
+            description: Longitude
+          - name: PHONE
+            description: Phone number
+          - name: REVENUE
+            description: Organization revenue
+          - name: UTILIZATION
+            description: Utilization count
+
       - name: providers
         description: Healthcare providers (physicians, practitioners)
         columns:
@@ -150,13 +232,29 @@ sources:
             data_tests:
               - unique
               - not_null
-          - name: NAME
-            description: Provider name
-          - name: SPECIALITY
-            description: Provider specialty
           - name: ORGANIZATION
             description: Reference to organization ID
-      
+          - name: NAME
+            description: Provider name
+          - name: GENDER
+            description: Provider gender
+          - name: SPECIALITY
+            description: Provider specialty
+          - name: ADDRESS
+            description: Provider address
+          - name: CITY
+            description: Provider city
+          - name: STATE
+            description: Provider state
+          - name: ZIP
+            description: ZIP code
+          - name: LAT
+            description: Latitude
+          - name: LON
+            description: Longitude
+          - name: UTILIZATION
+            description: Utilization count
+
       - name: payers
         description: Insurance payers/companies
         columns:
@@ -167,7 +265,45 @@ sources:
               - not_null
           - name: NAME
             description: Payer name
-      
+          - name: ADDRESS
+            description: Payer address
+          - name: CITY
+            description: Payer city
+          - name: STATE_HEADQUARTERED
+            description: State where payer is headquartered
+          - name: ZIP
+            description: ZIP code
+          - name: PHONE
+            description: Phone number
+          - name: AMOUNT_COVERED
+            description: Total amount covered
+          - name: AMOUNT_UNCOVERED
+            description: Total amount uncovered
+          - name: REVENUE
+            description: Payer revenue
+          - name: COVERED_ENCOUNTERS
+            description: Number of covered encounters
+          - name: UNCOVERED_ENCOUNTERS
+            description: Number of uncovered encounters
+          - name: COVERED_MEDICATIONS
+            description: Number of covered medications
+          - name: UNCOVERED_MEDICATIONS
+            description: Number of uncovered medications
+          - name: COVERED_PROCEDURES
+            description: Number of covered procedures
+          - name: UNCOVERED_PROCEDURES
+            description: Number of uncovered procedures
+          - name: COVERED_IMMUNIZATIONS
+            description: Number of covered immunizations
+          - name: UNCOVERED_IMMUNIZATIONS
+            description: Number of uncovered immunizations
+          - name: UNIQUE_CUSTOMERS
+            description: Number of unique customers
+          - name: QOLS_AVG
+            description: Average quality of life score
+          - name: MEMBER_MONTHS
+            description: Total member months
+
       - name: payer_transitions
         description: Patient insurance coverage changes over time
         columns:
@@ -179,10 +315,16 @@ sources:
             description: Coverage end year
           - name: PAYER
             description: Reference to payer ID
-      
+          - name: OWNERSHIP
+            description: Coverage ownership type
+
       - name: allergies
         description: Patient allergies
         columns:
+          - name: START
+            description: Allergy onset date
+          - name: STOP
+            description: Allergy resolution date
           - name: PATIENT
             description: Reference to patient ID
           - name: ENCOUNTER
@@ -191,14 +333,12 @@ sources:
             description: Allergy code
           - name: DESCRIPTION
             description: Allergy description
-          - name: START
-            description: Allergy onset date
-          - name: STOP
-            description: Allergy resolution date
-      
+
       - name: immunizations
         description: Immunization records
         columns:
+          - name: DATE
+            description: Immunization date
           - name: PATIENT
             description: Reference to patient ID
           - name: ENCOUNTER
@@ -207,12 +347,18 @@ sources:
             description: CVX immunization code
           - name: DESCRIPTION
             description: Immunization description
-          - name: DATE
-            description: Immunization date
-      
+          - name: BASE_COST
+            description: Immunization base cost
+
       - name: careplans
         description: Care plan records
         columns:
+          - name: Id
+            description: Unique careplan identifier (UUID)
+          - name: START
+            description: Care plan start date
+          - name: STOP
+            description: Care plan end date
           - name: PATIENT
             description: Reference to patient ID
           - name: ENCOUNTER
@@ -221,14 +367,18 @@ sources:
             description: Care plan code
           - name: DESCRIPTION
             description: Care plan description
-          - name: START
-            description: Care plan start date
-          - name: STOP
-            description: Care plan end date
-      
+          - name: REASONCODE
+            description: Reason code
+          - name: REASONDESCRIPTION
+            description: Reason description
+
       - name: imaging_studies
         description: Medical imaging study metadata
         columns:
+          - name: Id
+            description: Unique imaging study identifier (UUID)
+          - name: DATE
+            description: Study date
           - name: PATIENT
             description: Reference to patient ID
           - name: ENCOUNTER
@@ -241,12 +391,18 @@ sources:
             description: Imaging modality code
           - name: MODALITY_DESCRIPTION
             description: Imaging modality description
-          - name: DATE
-            description: Study date
-      
+          - name: SOP_CODE
+            description: SOP instance code
+          - name: SOP_DESCRIPTION
+            description: SOP instance description
+
       - name: devices
         description: Medical devices
         columns:
+          - name: START
+            description: Device start date
+          - name: STOP
+            description: Device stop date
           - name: PATIENT
             description: Reference to patient ID
           - name: ENCOUNTER
@@ -255,14 +411,14 @@ sources:
             description: Device code
           - name: DESCRIPTION
             description: Device description
-          - name: START
-            description: Device start date
-          - name: STOP
-            description: Device stop date
-      
+          - name: UDI
+            description: Unique Device Identifier
+
       - name: supplies
         description: Medical supplies
         columns:
+          - name: DATE
+            description: Supply date
           - name: PATIENT
             description: Reference to patient ID
           - name: ENCOUNTER
@@ -271,7 +427,5 @@ sources:
             description: Supply code
           - name: DESCRIPTION
             description: Supply description
-          - name: DATE
-            description: Supply date
           - name: QUANTITY
             description: Supply quantity
