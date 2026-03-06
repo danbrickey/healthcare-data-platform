@@ -38,6 +38,9 @@ models:
     2_silver_raw_vault:
       +materialized: incremental
       +schema: silver_raw_vault
+      staging:
+        +materialized: view
+        +tags: ["staging", "silver"]
       hubs:
         +tags: ["hub", "silver"]
       links:

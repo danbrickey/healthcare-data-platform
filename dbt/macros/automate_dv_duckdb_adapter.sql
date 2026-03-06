@@ -30,7 +30,8 @@
     TIMESTAMP
 {%- endmacro -%}
 
-{%- macro duckdb__type_string(for_dbt_compare=false) -%}
+{%- macro duckdb__type_string(is_hash=false, char_length=255) -%}
+    {#- DuckDB uses VARCHAR for all string types -#}
     VARCHAR
 {%- endmacro -%}
 

@@ -1,0 +1,129 @@
+version: 2
+
+models:
+  # --- Hashed Staging ---
+  - name: stg_synthea__patients_hashed
+    description: "Hashed staging for patients — adds hash keys, hashdiff, and audit columns."
+    columns:
+      - name: hk_patient
+        description: "MD5 hash key on patient_id"
+        tests:
+          - not_null
+      - name: hd_patient_demographics
+        description: "Hashdiff for demographics satellite change detection"
+        tests:
+          - not_null
+      - name: record_source
+        tests:
+          - not_null
+      - name: load_date
+        tests:
+          - not_null
+
+  - name: stg_synthea__encounters_hashed
+    description: "Hashed staging for encounters — adds hash keys, hashdiff, and audit columns."
+    columns:
+      - name: hk_encounter
+        description: "MD5 hash key on encounter_id"
+        tests:
+          - not_null
+      - name: hk_patient
+        description: "MD5 hash key on patient_id (for link FK)"
+        tests:
+          - not_null
+      - name: hk_patient_encounter
+        description: "Composite MD5 hash key on patient_id + encounter_id"
+        tests:
+          - not_null
+      - name: hd_encounter_details
+        description: "Hashdiff for encounter details satellite change detection"
+        tests:
+          - not_null
+      - name: record_source
+        tests:
+          - not_null
+      - name: load_date
+        tests:
+          - not_null
+
+  # --- Hubs ---
+  - name: h_patient
+    description: "Patient hub — unique patients identified by patient_id."
+    columns:
+      - name: hk_patient
+        description: "MD5 hash key (primary key)"
+        tests:
+          - unique
+          - not_null
+      - name: patient_id
+        description: "Natural business key"
+        tests:
+          - not_null
+      - name: load_date
+        tests:
+          - not_null
+      - name: record_source
+        tests:
+          - not_null
+
+  - name: h_encounter
+    description: "Encounter hub — unique healthcare encounters."
+    columns:
+      - name: hk_encounter
+        description: "MD5 hash key (primary key)"
+        tests:
+          - unique
+          - not_null
+      - name: encounter_id
+        description: "Natural business key"
+        tests:
+          - not_null
+      - name: load_date
+        tests:
+          - not_null
+      - name: record_source
+        tests:
+          - not_null
+
+  # --- Satellites ---
+  - name: s_patient_demographics
+    description: "Patient demographics satellite — tracks changes to name, DOB, gender, race, ethnicity, marital status."
+    columns:
+      - name: hk_patient
+        description: "FK to h_patient"
+        tests:
+          - not_null
+      - name: hd_patient_demographics
+        description: "Hashdiff for change detection"
+        tests:
+          - not_null
+      - name: load_date
+        tests:
+          - not_null
+      - name: record_source
+        tests:
+          - not_null
+
+  # --- Links ---
+  - name: l_patient_encounter
+    description: "Link between patient and encounter hubs."
+    columns:
+      - name: hk_patient_encounter
+        description: "Composite hash key (primary key)"
+        tests:
+          - unique
+          - not_null
+      - name: hk_patient
+        description: "FK to h_patient"
+        tests:
+          - not_null
+      - name: hk_encounter
+        description: "FK to h_encounter"
+        tests:
+          - not_null
+      - name: load_date
+        tests:
+          - not_null
+      - name: record_source
+        tests:
+          - not_null
