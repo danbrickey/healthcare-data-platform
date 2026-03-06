@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: patient_summary
+    description: "Patient summary view — aggregates demographics with encounter counts and cost totals per patient."
+    columns:
+      - name: patient_id
+        description: "Unique patient identifier"
+        tests:
+          - unique
+          - not_null
+      - name: full_name
+        description: "Patient full name"
+        tests:
+          - not_null
+      - name: total_encounters
+        description: "Total number of healthcare encounters"
+      - name: total_claim_cost
+        description: "Lifetime total claim costs"
+      - name: total_out_of_pocket_cost
+        description: "Lifetime out-of-pocket costs"
+
+  - name: encounter_metrics
+    description: "Encounter metrics view — aggregates encounter statistics by encounter class (ambulatory, emergency, inpatient, etc.)."
+    columns:
+      - name: encounter_class
+        description: "Type of encounter (ambulatory, emergency, inpatient, etc.)"
+        tests:
+          - unique
+          - not_null
+      - name: encounter_count
+        description: "Total encounters of this type"
+      - name: unique_patients
+        description: "Distinct patients with this encounter type"
+      - name: avg_claim_cost
+        description: "Average claim cost per encounter"
