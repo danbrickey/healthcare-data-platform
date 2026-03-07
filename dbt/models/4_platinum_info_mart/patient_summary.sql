@@ -14,6 +14,15 @@ encounters AS (
         SUM(out_of_pocket_cost) AS total_out_of_pocket_cost
     FROM {{ ref('fct_encounter') }}
     GROUP BY patient_key
+),
+
+conditions AS (
+    SELECT
+        patient_key,
+        COUNT(*) AS total_conditions,
+        COUNT(DISTINCT condition_code) AS distinct_conditions
+    FROM {{ ref('fct_condition') }}
+    GROUP BY patient_key
 )
 
 SELECT
@@ -32,7 +41,11 @@ SELECT
     e.last_encounter_date,
     COALESCE(e.total_claim_cost, 0) AS total_claim_cost,
     COALESCE(e.total_payer_coverage, 0) AS total_payer_coverage,
-    COALESCE(e.total_out_of_pocket_cost, 0) AS total_out_of_pocket_cost
+    COALESCE(e.total_out_of_pocket_cost, 0) AS total_out_of_pocket_cost,
+    COALESCE(c.total_conditions, 0) AS total_conditions,
+    COALESCE(c.distinct_conditions, 0) AS distinct_conditions
 FROM patients p
 LEFT JOIN encounters e
     ON p.patient_key = e.patient_key
+LEFT JOIN conditions c
+    ON p.patient_key = c.patient_key

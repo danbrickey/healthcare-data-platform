@@ -41,6 +41,39 @@ models:
         tests:
           - not_null
 
+  - name: fct_condition
+    description: "Condition fact table — patient conditions/diagnoses with start/stop dates and duration."
+    columns:
+      - name: condition_key
+        description: "Surrogate key (hk_patient_encounter_condition)"
+        tests:
+          - unique
+          - not_null
+      - name: patient_key
+        description: "FK to dim_patient"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_patient')
+                field: patient_key
+      - name: encounter_key
+        description: "FK to fct_encounter"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fct_encounter')
+                field: encounter_key
+      - name: condition_code
+        description: "SNOMED-CT condition code"
+        tests:
+          - not_null
+      - name: condition_start
+        description: "Date the condition was diagnosed"
+        tests:
+          - not_null
+
   - name: fct_encounter
     description: "Encounter fact table — healthcare encounter events with cost measures."
     columns:
@@ -54,8 +87,9 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('dim_patient')
-              field: patient_key
+              arguments:
+                to: ref('dim_patient')
+                field: patient_key
       - name: encounter_id
         description: "Natural business key"
         tests:
