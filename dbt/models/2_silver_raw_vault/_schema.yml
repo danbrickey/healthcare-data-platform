@@ -46,6 +46,58 @@ models:
         tests:
           - not_null
 
+  - name: stg_synthea__conditions_hashed
+    description: "Hashed staging for conditions — adds hash keys, hashdiff, and audit columns."
+    columns:
+      - name: hk_patient_encounter_condition
+        description: "Composite MD5 hash key on patient_id + encounter_id + code"
+        tests:
+          - not_null
+      - name: hk_patient
+        description: "MD5 hash key on patient_id (for link FK)"
+        tests:
+          - not_null
+      - name: hk_encounter
+        description: "MD5 hash key on encounter_id (for link FK)"
+        tests:
+          - not_null
+      - name: hd_condition_details
+        description: "Hashdiff for condition details satellite change detection"
+        tests:
+          - not_null
+      - name: record_source
+        tests:
+          - not_null
+      - name: load_date
+        tests:
+          - not_null
+
+  - name: stg_synthea__medications_hashed
+    description: "Hashed staging for medications — adds hash keys, hashdiff, and audit columns."
+    columns:
+      - name: hk_patient_encounter_medication
+        description: "Composite MD5 hash key on patient_id + encounter_id + code + medication_start"
+        tests:
+          - not_null
+      - name: hk_patient
+        description: "MD5 hash key on patient_id (for link FK)"
+        tests:
+          - not_null
+      - name: hk_encounter
+        description: "MD5 hash key on encounter_id (for link FK)"
+        tests:
+          - not_null
+      - name: hd_medication_details
+        description: "Hashdiff for medication details satellite change detection"
+        tests:
+          - not_null
+      - name: record_source
+        tests:
+          - not_null
+      - name: load_date
+        tests:
+          - not_null
+
   # --- Hubs ---
   - name: h_patient
     description: "Patient hub — unique patients identified by patient_id."
@@ -104,33 +156,6 @@ models:
         tests:
           - not_null
 
-  - name: stg_synthea__conditions_hashed
-    description: "Hashed staging for conditions — adds hash keys, hashdiff, and audit columns."
-    columns:
-      - name: hk_patient_encounter_condition
-        description: "Composite MD5 hash key on patient_id + encounter_id + code"
-        tests:
-          - not_null
-      - name: hk_patient
-        description: "MD5 hash key on patient_id (for link FK)"
-        tests:
-          - not_null
-      - name: hk_encounter
-        description: "MD5 hash key on encounter_id (for link FK)"
-        tests:
-          - not_null
-      - name: hd_condition_details
-        description: "Hashdiff for condition details satellite change detection"
-        tests:
-          - not_null
-      - name: record_source
-        tests:
-          - not_null
-      - name: load_date
-        tests:
-          - not_null
-
-  # --- Satellites ---
   - name: s_condition_details
     description: "Condition details satellite — tracks condition start/stop, code, and description."
     columns:
@@ -149,11 +174,52 @@ models:
         tests:
           - not_null
 
+  - name: s_medication_details
+    description: "Medication details satellite — tracks cost, dispenses, reason, and start/stop dates."
+    columns:
+      - name: hk_patient_encounter_medication
+        description: "FK to l_patient_encounter_medication"
+        tests:
+          - not_null
+      - name: hd_medication_details
+        description: "Hashdiff for change detection"
+        tests:
+          - not_null
+      - name: load_date
+        tests:
+          - not_null
+      - name: record_source
+        tests:
+          - not_null
+
   # --- Links ---
   - name: l_patient_encounter_condition
     description: "Link between patient, encounter, and condition — composite key on patient_id + encounter_id + code."
     columns:
       - name: hk_patient_encounter_condition
+        description: "Composite hash key (primary key)"
+        tests:
+          - unique
+          - not_null
+      - name: hk_patient
+        description: "FK to h_patient"
+        tests:
+          - not_null
+      - name: hk_encounter
+        description: "FK to h_encounter"
+        tests:
+          - not_null
+      - name: load_date
+        tests:
+          - not_null
+      - name: record_source
+        tests:
+          - not_null
+
+  - name: l_patient_encounter_medication
+    description: "Link between patient, encounter, and medication — composite key on patient_id + encounter_id + code + medication_start."
+    columns:
+      - name: hk_patient_encounter_medication
         description: "Composite hash key (primary key)"
         tests:
           - unique

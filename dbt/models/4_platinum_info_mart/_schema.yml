@@ -57,3 +57,24 @@ models:
         description: "Distinct patients diagnosed with this condition"
       - name: avg_duration_days
         description: "Average duration in days (null for chronic/ongoing conditions)"
+
+  - name: medication_summary
+    description: "Medication summary view — top medications by cost and frequency with payer coverage ratios."
+    columns:
+      - name: medication_code
+        description: "RxNorm medication code"
+        tests:
+          - unique
+          - not_null
+      - name: medication_description
+        description: "Human-readable medication name"
+        tests:
+          - not_null
+      - name: prescription_count
+        description: "Total prescriptions"
+      - name: unique_patients
+        description: "Distinct patients prescribed this medication"
+      - name: total_medication_cost
+        description: "Total cost across all prescriptions"
+      - name: payer_coverage_pct
+        description: "Percentage of cost covered by payer"

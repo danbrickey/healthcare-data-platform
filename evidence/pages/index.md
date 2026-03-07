@@ -56,6 +56,22 @@ select sum(condition_count) as total_conditions, count(*) as distinct_conditions
 from healthcare.condition_summary
 ```
 
+```sql medication_summary
+select * from healthcare.medication_summary
+```
+
+```sql top_medications_by_cost
+select medication_description, total_medication_cost, prescription_count, unique_patients, payer_coverage_pct
+from healthcare.medication_summary
+order by total_medication_cost desc
+limit 20
+```
+
+```sql medication_totals
+select sum(prescription_count) as total_prescriptions, sum(total_medication_cost) as total_medication_cost
+from healthcare.medication_summary
+```
+
 ```sql gender_dist
 select gender, count(*) as patient_count
 from healthcare.patient_summary
@@ -124,7 +140,7 @@ order by patient_count desc
 
 ## Population Overview
 
-<Grid cols=4>
+<Grid cols=5>
     <BigValue
         data={patient_count}
         value=total_patients
@@ -140,6 +156,11 @@ order by patient_count desc
         data={condition_totals}
         value=total_conditions
         title="Total Conditions"
+    />
+    <BigValue
+        data={medication_totals}
+        value=total_prescriptions
+        title="Total Prescriptions"
     />
     <BigValue
         data={patient_summary}
@@ -202,6 +223,29 @@ order by patient_count desc
     <Column id=condition_count title="Occurrences" fmt=num0 />
     <Column id=unique_patients title="Patients" fmt=num0 />
     <Column id=avg_duration_days title="Avg Days" fmt=num1 />
+</DataTable>
+
+## Medications & Pharmacy Costs
+
+<BarChart
+    data={top_medications_by_cost}
+    x=medication_description
+    y=total_medication_cost
+    title="Top 20 Medications by Total Cost"
+    swapXY=true
+    sort=false
+    fmt=usd
+/>
+
+<DataTable
+    data={top_medications_by_cost}
+    rows=all
+>
+    <Column id=medication_description title="Medication" />
+    <Column id=total_medication_cost title="Total Cost" fmt=usd />
+    <Column id=prescription_count title="Prescriptions" fmt=num0 />
+    <Column id=unique_patients title="Patients" fmt=num0 />
+    <Column id=payer_coverage_pct title="Payer %" fmt=num1 />
 </DataTable>
 
 ## Patient Demographics
