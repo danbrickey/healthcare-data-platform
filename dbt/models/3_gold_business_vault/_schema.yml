@@ -74,6 +74,39 @@ models:
         tests:
           - not_null
 
+  - name: fct_medication
+    description: "Medication fact table — prescriptions with cost measures, dispenses, and payer coverage."
+    columns:
+      - name: medication_key
+        description: "Surrogate key (hk_patient_encounter_medication)"
+        tests:
+          - unique
+          - not_null
+      - name: patient_key
+        description: "FK to dim_patient"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_patient')
+                field: patient_key
+      - name: encounter_key
+        description: "FK to fct_encounter"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fct_encounter')
+                field: encounter_key
+      - name: medication_code
+        description: "RxNorm medication code"
+        tests:
+          - not_null
+      - name: medication_start
+        description: "Date the medication was prescribed"
+        tests:
+          - not_null
+
   - name: fct_encounter
     description: "Encounter fact table — healthcare encounter events with cost measures."
     columns:

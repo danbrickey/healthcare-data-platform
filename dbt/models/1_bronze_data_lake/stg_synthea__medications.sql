@@ -1,4 +1,5 @@
 SELECT
+    CAST(START AS TIMESTAMP)                    AS medication_start_ts,
     CAST(START AS DATE)                         AS medication_start,
     CAST(STOP AS DATE)                          AS medication_stop,
     PATIENT                                     AS patient_id,
