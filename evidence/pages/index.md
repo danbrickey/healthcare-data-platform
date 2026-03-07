@@ -40,6 +40,22 @@ select * from healthcare.test_summary where resource_type = 'model'
 select count(*) as total_patients from healthcare.patient_summary
 ```
 
+```sql condition_summary
+select * from healthcare.condition_summary
+```
+
+```sql top_conditions
+select condition_description, condition_count, unique_patients, avg_duration_days
+from healthcare.condition_summary
+order by condition_count desc
+limit 20
+```
+
+```sql condition_totals
+select sum(condition_count) as total_conditions, count(*) as distinct_conditions
+from healthcare.condition_summary
+```
+
 ```sql gender_dist
 select gender, count(*) as patient_count
 from healthcare.patient_summary
@@ -108,7 +124,7 @@ order by patient_count desc
 
 ## Population Overview
 
-<Grid cols=3>
+<Grid cols=4>
     <BigValue
         data={patient_count}
         value=total_patients
@@ -119,6 +135,11 @@ order by patient_count desc
         value=total_encounters
         agg=sum
         title="Total Encounters"
+    />
+    <BigValue
+        data={condition_totals}
+        value=total_conditions
+        title="Total Conditions"
     />
     <BigValue
         data={patient_summary}
@@ -161,6 +182,27 @@ order by patient_count desc
     type=grouped
     sort=false
 />
+
+## Clinical Conditions
+
+<BarChart
+    data={top_conditions}
+    x=condition_description
+    y=condition_count
+    title="Top 20 Conditions by Frequency"
+    swapXY=true
+    sort=false
+/>
+
+<DataTable
+    data={top_conditions}
+    rows=all
+>
+    <Column id=condition_description title="Condition" />
+    <Column id=condition_count title="Occurrences" fmt=num0 />
+    <Column id=unique_patients title="Patients" fmt=num0 />
+    <Column id=avg_duration_days title="Avg Days" fmt=num1 />
+</DataTable>
 
 ## Patient Demographics
 

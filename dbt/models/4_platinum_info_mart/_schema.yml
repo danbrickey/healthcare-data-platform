@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: patient_summary
-    description: "Patient summary view — aggregates demographics with encounter counts and cost totals per patient."
+    description: "Patient summary view — aggregates demographics with encounter counts, cost totals, and condition counts per patient."
     columns:
       - name: patient_id
         description: "Unique patient identifier"
@@ -19,6 +19,10 @@ models:
         description: "Lifetime total claim costs"
       - name: total_out_of_pocket_cost
         description: "Lifetime out-of-pocket costs"
+      - name: total_conditions
+        description: "Total condition diagnosis records"
+      - name: distinct_conditions
+        description: "Count of distinct condition codes"
 
   - name: encounter_metrics
     description: "Encounter metrics view — aggregates encounter statistics by encounter class (ambulatory, emergency, inpatient, etc.)."
@@ -34,3 +38,22 @@ models:
         description: "Distinct patients with this encounter type"
       - name: avg_claim_cost
         description: "Average claim cost per encounter"
+
+  - name: condition_summary
+    description: "Condition summary view — top conditions by frequency with patient counts and average duration."
+    columns:
+      - name: condition_code
+        description: "SNOMED-CT condition code"
+        tests:
+          - unique
+          - not_null
+      - name: condition_description
+        description: "Human-readable condition name"
+        tests:
+          - not_null
+      - name: condition_count
+        description: "Total occurrences of this condition"
+      - name: unique_patients
+        description: "Distinct patients diagnosed with this condition"
+      - name: avg_duration_days
+        description: "Average duration in days (null for chronic/ongoing conditions)"
